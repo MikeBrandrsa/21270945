@@ -4,11 +4,12 @@ output:
     variant: markdown_github
 ---
 Financial Econometrics Practical
+
 # Outline
 
 This Readme will outline all the following questions by means of explaining, interpreting and reasoning through all the necessary code and functions, whereafter a simplified output will be reproduced within each respective question folders.
 
-First, I sanitize our working environment and source all the necessary functions that will be incorporated into our analyses.
+First, I sanitize my working environment and source all the necessary functions that will be incorporated into our analyses.
 ```{r, include=FALSE}
 
 rm(list = ls())
@@ -17,7 +18,7 @@ library(tidyverse)
 list.files('code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
 ```
 
-```{r}
+```{r, include=FALSE}
 # this is a commented out chunk indicating the process by which the questions folders where produced.
 
 # HTML Texevier:
@@ -42,5 +43,57 @@ list.files('code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.
 ```
 Now I procceed with the respective questions.
 
-# Question 1: Yield Spread
+# Question 1: Yield Spread.
 
+Since the beginning of 2020 the current Yield spreads in local mid to longer dated bond yields have been the highest in decades. This is conventionally expressed as the difference in these yields of these instruments in percentage points or basis points.
+
+```{r, include= FALSE}
+library(tidyverse)
+SA_bonds <- read_rds("data/SA_Bonds.rds")
+#BE_Infl <- read_rds("data/BE_Infl.rds")
+#bonds_2y <- read_rds("data/bonds_2y.rds")
+#bonds_10y <- read_rds("data/bonds_10y.rds")
+#usdzar <- read_rds("data/usdzar.rds")
+#ZA_Infl <- read_rds("data/ZA_Infl.rds")
+#IV <- read_rds("data/IV.rds")
+
+```
+
+```{r, echo=FALSE}
+library(tbl2xts)
+library(PerformanceAnalytics)
+
+bond_Adj <- 
+SA_bonds %>% gather(Bond, Yield, -date) %>% arrange(date) 
+
+bondplot1 <- bond_Adj %>% 
+ggplot() + 
+geom_line(aes(x = date, y = Yield, color = Bond), alpha = 0.8, 
+    size = 1)
+
+print(bondplot1)
+
+bondplot1 <- bondplot1 + theme_bw() + theme(legend.position = "bottom") + labs(x = "date", 
+    y = "Yield", title = "Yield of ZAR Bonds.", subtitle = "Using 3 Month, 2 Year and 10 year bond yields.", 
+    caption = "Note:\nNico Katzke's data used")
+```
+
+
+
+
+
+
+```{r}
+# bond_Adj <- 
+# SA_bonds %>%  gather(Bond, Yield, -date) %>% 
+
+    
+    
+    
+#arrange(date) 
+# Now calculate ordinary returns per stock:
+#group_by(Stocks) %>% 
+#mutate(Returns = Price/lag(Price) - 1) %>% ungroup()
+
+
+````
