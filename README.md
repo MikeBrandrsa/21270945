@@ -88,3 +88,22 @@ print(bondplot3)
 ![](README_files/figure-markdown_github/unnamed-chunk-7-1.png)
 
 # Question 2: Portfolio Construction
+
+``` r
+library(PerformanceAnalytics)
+library(tbl2xts)
+
+# effrtnsQ2 <- T40 %>% arrange(date) %>% gather(Tickers, Return, -date) %>% 
+   # tbl2xts::tbl_xts(cols_to_xts = Return, spread_by = Tickers) %>% 
+   # PerformanceAnalytics::Return.calculate(., method = "log") %>% 
+   # tbl2xts::xts_tbl()
+```
+
+``` r
+# j400j200effectivereturns <- T40 %>% select(date, Tickers, Return, J400, J200) %>% 
+  #  arrange(date) %>% mutate(effj200rtn = Return*J200) %>% 
+  #  mutate(effj400rtn = Return*J400) %>% select(date,effj200rtn,effj400rtn) 
+
+#Cum_JJRtn <- j400j200effectivereturns %>% arrange(date) %>% 
+  #  mutate(CumJ2Rtn = (cumprod(1 + effj200rtn))) %>% mutate(CumJ4Rtn = (cumprod(1 + effj400rtn)))# Start at 1)
+```
