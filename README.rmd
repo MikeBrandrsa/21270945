@@ -21,11 +21,33 @@ library(tidyverse)
 list.files('code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
 ```
 
-```{r}
+```{r, include=FALSE}
 # HTML Texevier:
-Texevier::create_template_html(directory = "Questions",
+Texevier::create_template_html(directory = "/Users/michaelbrand/OneDrive/Documents/UNI/2021/2/Fin.Metrics/Test/21270945/Questions",
                           template_name = "Question1"
 )
+
+Texevier::create_template_html(directory = "/Users/michaelbrand/OneDrive/Documents/UNI/2021/2/Fin.Metrics/Test/21270945/Questions",
+                          template_name = "Question2"
+)
+
+Texevier::create_template_html(directory = "/Users/michaelbrand/OneDrive/Documents/UNI/2021/2/Fin.Metrics/Test/21270945/Questions",
+                          template_name = "Question3"
+)
+
+Texevier::create_template_html(directory = "/Users/michaelbrand/OneDrive/Documents/UNI/2021/2/Fin.Metrics/Test/21270945/Questions",
+                          template_name = "Question4"
+)
+
+Texevier::create_template_html(directory = "/Users/michaelbrand/OneDrive/Documents/UNI/2021/2/Fin.Metrics/Test/21270945/Questions",
+                          template_name = "Question5"
+)
+
+Texevier::create_template_html(directory = "/Users/michaelbrand/OneDrive/Documents/UNI/2021/2/Fin.Metrics/Test/21270945/Questions",
+                          template_name = "Question6"
+)
+
+
 
 ```
 
