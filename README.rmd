@@ -129,7 +129,9 @@ library(tbl2xts)
    # PerformanceAnalytics::Return.calculate(., method = "log") %>% 
    # tbl2xts::xts_tbl()
 
-
+# porteqw <- rmsfuns::Safe_Return.portfolio(Rtn, weight = Wt, geometric = FALSE)
+### use this ####
+    ####    ####
 ```
 
 
@@ -193,10 +195,13 @@ Q3centered <- bind_cols(
 return(Q3centered)
 any(is.na(Q3centered))
 ```
+\newpage
+```{r}
+Q3centemax <- Q3centered %>% select(-date)
+Q3covmat <- cov(Q3centemax)  
+```
 
 ```{r}
-
-Q3covmat <- cov(Q3centered %>% select(-date))  # Covariance Matrix
 # eigenvectors:
 evec <- eigen(Q3covmat, symmetric = TRUE)$vector
 # eigenvalues:
@@ -209,7 +214,9 @@ all.equal(lambda, eval)
 prcomp(Q3covmat)
 prop = eval/sum(eval)
 print(prop)
+```
 
+```{r}
 prop <- tibble(Loadings = prop) %>% mutate(PC = paste0("PC_", 
     row_number()))
 
@@ -276,3 +283,56 @@ chart.RollingCorrelation(Ra = xtsQ3ALSIRTN , Rb=rfxts, width = 100, xaxis = TRUE
 
 ```
 
+
+# Question 4: Volatility and GARCH estimates
+
+
+```{r}
+cncy <- read_rds("data/currencies.rds")
+cncy_Carry <- read_rds("data/cncy_Carry.rds")
+cncy_value <- read_rds("data/cncy_value.rds")
+cncyIV <- read_rds("data/cncyIV.rds")
+bbdxy <- read_rds("data/bbdxy.rds")
+PPP <- read_csv("data/ppp.csv", col_names = T ) 
+```
+
+vol compared to other currencies or are they all vol.
+
+```{r}
+Q4cncieszar <- cncy %>% spread(Name, Price) %>% select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
+    mutate(Spot = gsub("SouthAfrica", "USD/ZAR", Spot))
+
+Q4cnciesplot <- Q4cncieszar %>% ggplot() +  geom_line(aes(date, Price, color = Spot)) + fmxdat::theme_fmx() + labs(x = "date", 
+    y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
+Q4cnciesplot
+```
+
+```{r}
+# Q4value <- cncy_value %>%  spread(Name, Price)
+#%>%  select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
+   # mutate(Spot = gsub("SouthAfrica", "USD/ZAR", Spot))
+
+```
+
+```{r}
+library(lubridate)
+Q4PPP <- PPP %>% select(TIME, LOCATION, Value) %>% spread(LOCATION, Value) %>% 
+    select(TIME, ZAF, USA) %>% gather(Spot, Price, -TIME)# %>%  mutate(YearMonth = format(date, "%Y%B"))
+
+Q4cnciesplot2 <- Q4PPP %>% ggplot() +  geom_line(aes(TIME, Price, color = Spot)) + fmxdat::theme_fmx() + labs(x = "date", 
+    y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
+Q4cnciesplot2
+```
+
+```{r}
+library(tbl2xts)
+
+Q4dlogzar <- Q4cncieszar %>% mutate(Price = na.locf(Price)) %>% arrange(date)  %>% mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret,na.rm =T))) %>% filter(date > dplyr::first(date))
+    
+
+
+
+
+
+
+```

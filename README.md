@@ -97,6 +97,10 @@ library(tbl2xts)
    # tbl2xts::tbl_xts(cols_to_xts = Return, spread_by = Tickers) %>% 
    # PerformanceAnalytics::Return.calculate(., method = "log") %>% 
    # tbl2xts::xts_tbl()
+
+# porteqw <- rmsfuns::Safe_Return.portfolio(Rtn, weight = Wt, geometric = FALSE)
+### use this ####
+    ####    ####
 ```
 
 ``` r
@@ -187,7 +191,11 @@ any(is.na(Q3centered))
     ## [1] FALSE
 
 ``` r
-Q3covmat <- cov(Q3centered %>% select(-date))  # Covariance Matrix
+Q3centemax <- Q3centered %>% select(-date)
+Q3covmat <- cov(Q3centemax)  
+```
+
+``` r
 # eigenvectors:
 evec <- eigen(Q3covmat, symmetric = TRUE)$vector
 # eigenvalues:
@@ -2225,7 +2233,7 @@ labs(x = "Principal Components", y = "Loadings", title = "Eigenvalue proportions
 g
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-15-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-17-1.png)
 
 ``` r
 #pcaseries <- Q3ALSIRTN %>% spread(Tickers, Return) %>% select(-date)
@@ -2358,4 +2366,76 @@ chart.RollingCorrelation(Ra = xtsQ3ALSIRTN , Rb=rfxts, width = 100, xaxis = TRUE
     ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
     ## deviation is zero
 
-![](README_files/figure-markdown_github/unnamed-chunk-17-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-19-1.png)
+
+# Question 4: Volatility and GARCH estimates
+
+``` r
+cncy <- read_rds("data/currencies.rds")
+cncy_Carry <- read_rds("data/cncy_Carry.rds")
+cncy_value <- read_rds("data/cncy_value.rds")
+cncyIV <- read_rds("data/cncyIV.rds")
+bbdxy <- read_rds("data/bbdxy.rds")
+PPP <- read_csv("data/ppp.csv", col_names = T ) 
+```
+
+    ## Rows: 1792 Columns: 8
+
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (5): LOCATION, INDICATOR, SUBJECT, MEASURE, FREQUENCY
+    ## dbl (2): TIME, Value
+    ## lgl (1): Flag Codes
+
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+vol compared to other currencies or are they all vol.
+
+``` r
+Q4cncieszar <- cncy %>% spread(Name, Price) %>% select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
+    mutate(Spot = gsub("SouthAfrica", "USD/ZAR", Spot))
+
+Q4cnciesplot <- Q4cncieszar %>% ggplot() +  geom_line(aes(date, Price, color = Spot)) + fmxdat::theme_fmx() + labs(x = "date", 
+    y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
+Q4cnciesplot
+```
+
+    ## Warning: Removed 2 row(s) containing missing values (geom_path).
+
+![](README_files/figure-markdown_github/unnamed-chunk-21-1.png)
+
+``` r
+# Q4value <- cncy_value %>%  spread(Name, Price)
+#%>%  select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
+   # mutate(Spot = gsub("SouthAfrica", "USD/ZAR", Spot))
+```
+
+``` r
+library(lubridate)
+```
+
+    ## 
+    ## Attaching package: 'lubridate'
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     date, intersect, setdiff, union
+
+``` r
+Q4PPP <- PPP %>% select(TIME, LOCATION, Value) %>% spread(LOCATION, Value) %>% 
+    select(TIME, ZAF, USA) %>% gather(Spot, Price, -TIME)# %>%  mutate(YearMonth = format(date, "%Y%B"))
+
+Q4cnciesplot2 <- Q4PPP %>% ggplot() +  geom_line(aes(TIME, Price, color = Spot)) + fmxdat::theme_fmx() + labs(x = "date", 
+    y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
+Q4cnciesplot2
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-23-1.png)
+
+``` r
+library(tbl2xts)
+
+Q4dlogzar <- Q4cncieszar %>% mutate(Price = na.locf(Price)) %>% arrange(date)  %>% mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret,na.rm =T))) %>% filter(date > dplyr::first(date))
+```
