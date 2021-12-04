@@ -145,3 +145,134 @@ library(tbl2xts)
   #  mutate(CumJ2Rtn = (cumprod(1 + effj200rtn))) %>% mutate(CumJ4Rtn = (cumprod(1 + effj400rtn)))# Start at 1)
 ```
 
+
+# Question 3: Volatility Comparison
+
+get return series for just j200
+```{r}
+#pacman::p_load("tidyverse", "devtools", "FactoMineR", "factoextra", 
+   # "broom", "rmsfuns")
+#T40 <- read_rds("data/T40.rds")
+#Q2ALSIRTN <- T40  %>% arrange(date) %>% select(date, Tickers, Return, J200) %>% drop_na()
+#colSums(is.na(Q3ALSIRTN))
+#WghtALSIRTN <- Q3ALSIRTN %>% mutate(effectivereturn = Return*J200) %>% 
+ #   group_by(date) %>% summarise(portfolio_return = sum(effectivereturn)) %>% ungroup()
+ # this is for Q2 
+
+```
+
+```{r}
+pacman::p_load("tidyverse", "devtools", "FactoMineR", "factoextra", 
+    "broom", "rmsfuns")
+T40 <- read_rds("data/T40.rds")
+Q3ALSIRTN <- T40  %>% arrange(date) %>% select(date, Tickers, Return, J200) %>% drop_na() %>% select(date, Tickers, Return) %>% mutate(Return = ifelse(Return > 0.25, 0.25, 
+    ifelse(Return < -0.25, -0.25, Return)))
+colSums(is.na(Q3ALSIRTN))
+```
+
+```{r}
+Q3plot1 <- Q3ALSIRTN %>% ggplot() + geom_line(aes(date, Return, color=Tickers, alpha =0.9)) +
+                                                   labs(x = "date", y = "Returns", title = "top40 ALSI Returns", subtitle = "", caption = "Note:\nNico Katzke's data used")
+Q3plot1
+```
+
+```{r}
+
+Q3centered <- Q3ALSIRTN %>% group_by(Tickers) %>% mutate(Return = Return - mean(Return)) %>% ungroup() %>% spread(Tickers, Return)
+
+
+set.seed(1234)
+        NAll <- nrow(Q3centered %>% gather(Return, Returns, -date))
+
+Q3centered <- bind_cols(
+          Q3centered %>% gather(Tickers, Return, -date),
+          Q3centered %>% gather(Tickers, Return, -date) %>%
+            mutate(Dens = list(density(Return, na.rm=T))) %>%
+            summarise(Random_Draws = list(sample(Dens[[1]]$x, NAll, replace = TRUE, prob=.$Dens[[1]]$y))) %>% 
+            unnest(Random_Draws)) %>% mutate(Return = coalesce(Return, Random_Draws)) %>% select(-Random_Draws) %>% spread(Tickers, Return)
+return(Q3centered)
+any(is.na(Q3centered))
+```
+
+```{r}
+
+Q3covmat <- cov(Q3centered %>% select(-date))  # Covariance Matrix
+# eigenvectors:
+evec <- eigen(Q3covmat, symmetric = TRUE)$vector
+# eigenvalues:
+eval <- eigen(Q3covmat, symmetric = TRUE)$values
+
+lambda = diag(t(evec) %*% Q3covmat %*% evec)
+# Which should be equal to eval:
+all.equal(lambda, eval)
+
+prcomp(Q3covmat)
+prop = eval/sum(eval)
+print(prop)
+
+prop <- tibble(Loadings = prop) %>% mutate(PC = paste0("PC_", 
+    row_number()))
+
+prop[, "PC"][[1]] <- factor(prop[, "PC"][[1]], levels = prop$PC)
+Prop2 <- prop %>% slice_head(n=10)
+g <- Prop2 %>% 
+ggplot() + geom_bar(aes(PC, Loadings), stat = "identity", fill = "steelblue") + 
+    
+fmxdat::theme_fmx(axis.size.title = fmxdat::ggpts(38), axis.size = fmxdat::ggpts(35), 
+    title.size = fmxdat::ggpts(42), CustomCaption = T) + 
+scale_y_continuous(breaks = scales::pretty_breaks(10), labels = scales::percent_format(accuracy = 1)) + 
+labs(x = "Principal Components", y = "Loadings", title = "Eigenvalue proportions", 
+    caption = "Source: Fmxdat Package")
+g
+```
+
+
+```{r}
+#pcaseries <- Q3ALSIRTN %>% spread(Tickers, Return) %>% select(-date)
+#demean = scale(pcaseries, center = TRUE, scale = TRUE)
+
+
+#Q3ALSIRTN
+
+#sigma <- cov(demean )
+
+#evec <- eigen(sigma, symmetric = TRUE)$vector  #eigen vectors
+#eval <- eigen(sigma, symmetric = TRUE)$values  #eigen values
+
+# or done automagically (using standard covariance matrix
+# warts and all):
+#pcrun <- prcomp(demean, center = T, scale. = T)
+#ev <- pcrun$rotation
+
+#e_min1 <- solve(ev)  # Invert eigenvector as in equation above)
+#R_PCA <- e_min1 %*% t(pcaseries)  # Note: pcaseries, not demean.
+
+#PC_Series <- t(R_PCA) %>% tibble::as_tibble()
+
+#PC_Series <- PC_Series %>% mutate(date = unique(Spots$date)) %>% 
+    #gather(Type, Val, -date)
+
+#---- Let's look at these series:
+
+# Returns:
+#PC_Series %>% filter(Type %in% paste0("PC", 1:5)) %>% ggplot() + 
+    #geom_line(aes(date, Val, color = Type))
+
+
+
+```
+now we add the supplementary variables.
+```{r}
+library(PerformanceAnalytics)
+library(tbl2xts)
+rf <-read_rds("data/SA_Bonds.rds") %>% 
+    select(date, SA_3M) %>%  gather(Bond, Yield, -date) %>%
+    arrange(date)
+rfxts <- tbl_xts(rf)
+
+xtsQ3ALSIRTN <- tbl_xts(Q3ALSIRTN)
+chart.RollingCorrelation(Ra = xtsQ3ALSIRTN , Rb=rfxts, width = 100, xaxis = TRUE,
+  legend.loc = NULL, colorset = (1:12), fill = NA)
+
+```
+
