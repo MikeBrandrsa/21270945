@@ -1,5 +1,5 @@
 ---
-title: "Paged HTML Document"
+title: "Question 1: Yields"
 author: "NF Katzke"
 date: "November 2021"
 # date: "`r Sys.Date()`"
@@ -16,14 +16,14 @@ output:
     # change to true for a self-contained document, but it'll be a litte slower for Pandoc to render
     self_contained: TRUE
 abstract: |
-    This is an abstract. Much can be written here. Uncomment this line to go without an abstract.
-    Abstracts have no spaces, but can have bullets.
+##    This is an abstract. Much can be written here. Uncomment this line to go without an abstract.
+##    Abstracts have no spaces, but can have bullets.
 
-    Bullets can be created as follows
+##    Bullets can be created as follows
 
-    + You can add bullets, but do not add colons please.
+#    + You can add bullets, but do not add colons please.
 
-    + Line breaks are also not permitted.
+#    + Line breaks are also not permitted.
 
 ---
 
