@@ -48,10 +48,6 @@ instruments in percentage points or basis points.
 several places where rates stagnate and thus check for missing values in
 the data.
 
-``` r
-is.na(bond_Adj)
-```
-
     ##           date  Bond Yield
     ##     [1,] FALSE FALSE FALSE
     ##     [2,] FALSE FALSE FALSE
@@ -17198,10 +17194,6 @@ is.na(bond_Adj)
     ## [17143,] FALSE FALSE FALSE
     ## [17144,] FALSE FALSE FALSE
     ## [17145,] FALSE FALSE FALSE
-
-``` r
-sum(is.na(bond_Adj))
-```
 
     ## [1] 0
 
