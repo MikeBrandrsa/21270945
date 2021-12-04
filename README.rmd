@@ -78,7 +78,7 @@ print(bondplot1)
 
 ```
 we notice several places where rates stagnate and thus check for missing values in the data.
-```{r, echo=FALSE}
+```{r, echo=FALSE, include=FALSE}
 is.na(bond_Adj)
 sum(is.na(bond_Adj))
 ```
@@ -111,7 +111,9 @@ bondplot3 <- bondplot3 + fmxdat::theme_fmx() + theme(legend.position = "bottom")
 
 print(bondplot3)
 ```
+\newpage
 
+# Question 2: Portfolio Construction
 
 
 
