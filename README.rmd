@@ -78,7 +78,7 @@ print(bondplot1)
 
 ```
 we notice several places where rates stagnate and thus check for missing values in the data.
-```{r}
+```{r, echo=FALSE}
 is.na(bond_Adj)
 sum(is.na(bond_Adj))
 ```
