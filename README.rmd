@@ -69,31 +69,50 @@ SA_bonds %>% gather(Bond, Yield, -date) %>% arrange(date)
 bondplot1 <- bond_Adj %>% 
 ggplot() + 
 geom_line(aes(x = date, y = Yield, color = Bond), alpha = 0.8, 
-    size = 1)
+    size = 1.2)
+
+bondplot1 <- bondplot1 + fmxdat::theme_fmx() + theme(legend.position = "bottom") + labs(x = "date", 
+    y = "Yield", title = "Yield of ZAR Bonds.", subtitle = "Using 3 Month, 2 Year and 10 year bond yields.", caption = "Note:\nNico Katzke's data used")
 
 print(bondplot1)
 
-bondplot1 <- bondplot1 + theme_bw() + theme(legend.position = "bottom") + labs(x = "date", 
-    y = "Yield", title = "Yield of ZAR Bonds.", subtitle = "Using 3 Month, 2 Year and 10 year bond yields.", 
-    caption = "Note:\nNico Katzke's data used")
+```
+we notice several places where rates stagnate and thus check for missing values in the data.
+```{r}
+is.na(bond_Adj)
+sum(is.na(bond_Adj))
+```
+it appears that all the data is present.
+
+Now at first glance an immediate divergence can be observed between the three bond yields, specifically with the three-month and two-year yields diverging from the longer 10 year bond yield. Before investigating this from an economic and quantitative perspective it is worth investigating it more formally.
+```{r}
+bond_Adj_yield <- SA_bonds %>%
+    arrange(date) %>% 
+mutate("10Yr2Yr_spread" = ZA_10Yr - ZA_2Yr,"10Yr3M_spread" = ZA_10Yr - SA_3M,"2Yr3M_spread" = ZA_2Yr - SA_3M ) %>% select(date, "10Yr3M_spread","10Yr2Yr_spread","2Yr3M_spread" )
+
+bond_Adj_yield_tdy <- bond_Adj_yield %>% gather(bondpair, Spread , -date) %>% arrange(date) 
+
+bondplot2 <- bond_Adj_yield_tdy %>% ggplot() + geom_line(aes(x = date, y = Spread, color = bondpair), alpha = 0.8, size = 1.2) 
+
+bondplot2 <- bondplot2 + fmxdat::theme_fmx() + theme(legend.position = "bottom") + labs(x = "date", 
+    y = "Yield Spread", title = "Yield Spread of ZAR Bonds.", subtitle = "Using 3 Month, 2 Year and 10 year bond yields.", caption = "Note:\nNico Katzke's data used")
+
+print(bondplot2)
+```
+
+```{r}
+bond_Adj_yield_tdy2010 <- bond_Adj_yield %>% gather(bondpair, Spread , -date) %>% arrange(date) %>% 
+    filter(date > "2010-01-01")
+
+bondplot3 <- bond_Adj_yield_tdy2010 %>% ggplot() + geom_line(aes(x = date, y = Spread, color = bondpair), alpha = 0.8, size = 1.2) 
+
+bondplot3 <- bondplot3 + fmxdat::theme_fmx() + theme(legend.position = "bottom") + labs(x = "date", 
+    y = "Yield Spread", title = "Yield Spread of ZAR Bonds.", subtitle = "Using 3 Month, 2 Year and 10 year bond yields.", caption = "Note:\nNico Katzke's data used")
+
+print(bondplot3)
 ```
 
 
 
 
 
-
-```{r}
-# bond_Adj <- 
-# SA_bonds %>%  gather(Bond, Yield, -date) %>% 
-
-    
-    
-    
-#arrange(date) 
-# Now calculate ordinary returns per stock:
-#group_by(Stocks) %>% 
-#mutate(Returns = Price/lag(Price) - 1) %>% ungroup()
-
-
-````
