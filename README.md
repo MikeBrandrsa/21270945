@@ -2438,4 +2438,314 @@ Q4cnciesplot2
 library(tbl2xts)
 
 Q4dlogzar <- Q4cncieszar %>% mutate(Price = na.locf(Price)) %>% arrange(date)  %>% mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret,na.rm =T))) %>% filter(date > dplyr::first(date))
+    
+Q4plot3 <- Q4dlogzar %>% ggplot() + geom_line(aes(x = date, y = scaledret, colour = Spot, 
+    alpha = 0.5)) + 
+ggtitle("Log-Scaled USD/ZAR Returns") + 
+guides(alpha = "none") + 
+fmxdat::theme_fmx()
+
+ggplot(Q4dlogzar) + 
+geom_histogram(aes(x = scaledret, fill = Spot, alpha = 0.5))
 ```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](README_files/figure-markdown_github/unnamed-chunk-24-1.png)
+
+definite potential for bias due to clumping (auto-persitance in returns)
+so use perfrimanceana, to clean
+
+``` r
+Rtn <-  Q4dlogzar %>% # Easier to work with ymd here 
+   tbl_xts(., cols_to_xts = dlogret, spread_by = Spot)
+```
+
+    ## The spread_by column only has one category. 
+    ## Hence only the column name was changed...
+
+``` r
+Rtn[is.na(Rtn)] <- 0
+
+Plotdata = cbind(Rtn, Rtn^2, abs(Rtn))
+
+colnames(Plotdata) = c("Returns", "Returns_Sqd", "Returns_Abs")
+
+Plotdata <- 
+Plotdata %>% xts_tbl() %>% 
+gather(ReturnType, Returns, -date)
+
+ggplot(Plotdata) + 
+geom_line(aes(x = date, y = Returns, colour = ReturnType, alpha = 0.5)) + 
+    
+ggtitle("Return Type Persistence: USD/ZAR") + 
+facet_wrap(~ReturnType, nrow = 3, ncol = 1, scales = "free") + 
+    
+guides(alpha = "none", colour = "none") + 
+fmxdat::theme_fmx()
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-25-1.png) From the
+above figure it seems that:
+
+There remains strong first order persistence in returns There is clearly
+periods of strong second order persistence There is clear evidence of
+long memory in the second order process.
+
+``` r
+forecast::Acf(Rtn, main = "ACF: Equally Weighted Return")
+```
+
+    ## Registered S3 method overwritten by 'quantmod':
+    ##   method            from
+    ##   as.zoo.data.frame zoo
+
+![](README_files/figure-markdown_github/unnamed-chunk-26-1.png)
+
+``` r
+forecast::Acf(Rtn^2, main = "ACF: Squared Equally Weighted Return")
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-26-2.png)
+
+``` r
+forecast::Acf(abs(Rtn), main = "ACF: Absolute Equally Weighted Return")
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-26-3.png) The
+above proves what we expected - in particular very strong conditional
+heteroskedasticity, as well as long memory.
+
+A formal test for ARCH effects: LBQ stats on squared returns:
+
+``` r
+Box.test(coredata(Rtn^2), type = "Ljung-Box", lag = 12)
+```
+
+    ## 
+    ##  Box-Ljung test
+    ## 
+    ## data:  coredata(Rtn^2)
+    ## X-squared = 1757.2, df = 12, p-value < 2.2e-16
+
+The test rejects the nulls of no ARCH effects - hence we need to control
+for the remaining conditional heteroskedasticity in the returns series,
+
+``` r
+library(rugarch)
+```
+
+    ## Loading required package: parallel
+
+    ## 
+    ## Attaching package: 'rugarch'
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     reduce
+
+    ## The following object is masked from 'package:stats':
+    ## 
+    ##     sigma
+
+``` r
+garch11 <- 
+  
+  ugarchspec(
+    
+    variance.model = list(model = c("sGARCH","gjrGARCH","eGARCH","fGARCH","apARCH")[1], 
+                          
+    garchOrder = c(1, 1)), 
+    
+    mean.model = list(armaOrder = c(1, 0), include.mean = TRUE), 
+    
+    distribution.model = c("norm", "snorm", "std", "sstd", "ged", "sged", "nig", "ghyp", "jsu")[1])
+
+# Now to fit, I use as.matrix and the data - this way the plot functions we will use later will work.
+
+garchfit1 = ugarchfit(spec = garch11,data = Rtn) 
+
+# Note it saved a S4 class object - having its own plots and functionalities:
+class(garchfit1)
+```
+
+    ## [1] "uGARCHfit"
+    ## attr(,"package")
+    ## [1] "rugarch"
+
+``` r
+library(xtable)
+slotNames(garchfit1)
+```
+
+\[1\] “fit” “model”
+
+``` r
+names(garchfit1@fit)
+```
+
+\[1\] “hessian” “cvar” “var” “sigma”  
+\[5\] “condH” “z” “LLH” “log.likelihoods” \[9\] “residuals” “coef”
+“robust.cvar” “A”  
+\[13\] “B” “scores” “se.coef” “tval”  
+\[17\] “matcoef” “robust.se.coef” “robust.tval” “robust.matcoef” \[21\]
+“fitted.values” “convergence” “kappa” “persistence”  
+\[25\] “timer” “ipars” “solver”
+
+``` r
+names(garchfit1@model)
+```
+
+\[1\] “modelinc” “modeldesc” “modeldata” “pars” “start.pars” \[6\]
+“fixed.pars” “maxOrder” “pos.matrix” “fmodel” “pidx”  
+\[11\] “n.start”
+
+``` r
+# Use it now as follows:
+garchfit1@fit$matcoef  # Model coefficients.
+```
+
+           Estimate   Std. Error     t value   Pr(>|t|)
+
+mu 1.091702e-04 4.360069e-05 2.5038644 0.01228451 ar1 1.834999e-03
+1.004088e-02 0.1827529 0.85499189 omega 1.766632e-07 2.550788e-07
+0.6925829 0.48857134 alpha1 6.373138e-02 5.751895e-03 11.0800655
+0.00000000 beta1 9.352686e-01 5.500684e-03 170.0276956 0.00000000
+
+``` r
+# Include it in your paper as follows:
+pacman::p_load(xtable)
+Table <- xtable(garchfit1@fit$matcoef)
+print(Table, type = "latex", comment = FALSE)
+```
+
+``` r
+persistence(garchfit1)
+```
+
+    ## [1] 0.999
+
+``` r
+sigma <- sigma(garchfit1) %>% xts_tbl() 
+colnames(sigma) <- c("date", "sigma") 
+sigma <- sigma %>% mutate(date = as.Date(date))
+
+gg <- 
+  
+ggplot() + 
+  geom_line(data = Plotdata %>% filter(ReturnType == "Returns_Sqd") %>% select(date, Returns) %>% 
+              
+              unique %>% mutate(Returns = sqrt(Returns)), aes(x = date, y = Returns)) + 
+  
+  geom_line(data = sigma, aes(x = date, y = sigma), color = "red", size = 2, alpha = 0.8) + 
+  
+  # scale_y_continuous(limits = c(0, 0.35)) + 
+  labs(title = "Comparison: Returns Sigma vs Sigma from Garch", 
+       
+       subtitle = "Note the smoothing effect of garch, as noise is controlled for.", x = "", y = "Comparison of estimated volatility",
+       
+       caption = "Source: Fin metrics class | Calculations: Own") + 
+  
+    fmxdat::theme_fmx(CustomCaption = TRUE)
+
+
+fmxdat::finplot(gg, y.pct = T, y.pct_acc = 1)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-31-1.png)
+
+``` r
+ni <- newsimpact(z = NULL, garchfit1)
+
+plot(ni$zx, ni$zy, ylab = ni$yexpr, xlab = ni$xexpr, type = "l", 
+    main = "News Impact Curve")
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-32-1.png)
+
+``` r
+sigma <- sigma(garchfit1)  # Conditional resids
+
+epsilon <- residuals(garchfit1)  # Ordinary resids
+
+zt <- residuals(garchfit1, standardize = TRUE)  # Standardized resids
+
+# Check the class notes on the definitions of epsilon and zt:
+ztbyhand = epsilon/sigma
+
+# And they are exactly the same:
+all.equal(zt, ztbyhand)
+```
+
+    ## [1] TRUE
+
+``` r
+infocriteria(garchfit1)
+```
+
+    ##                       
+    ## Akaike       -7.245377
+    ## Bayes        -7.242212
+    ## Shibata      -7.245378
+    ## Hannan-Quinn -7.244314
+
+``` r
+plot(garchfit1, which = 1)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-33-1.png)
+
+``` r
+plot(garchfit1, which = 9)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-34-1.png)
+
+``` r
+plot(garchfit1, which = 8)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-34-2.png)
+
+``` r
+plot(garchfit1, which = 3)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-35-1.png) \# Note
+for the above plot - the blue line is sigma, gray line \# epsilon
+(i.e. sigma + noise.): notice the massive \# distorting impact of noise
+in ordinary epsilon, or squared \# error / S.D. measures: which are
+typically used for \# proxying vol.
+
+``` r
+gjrgarch11 = ugarchspec(variance.model = list(model = c("sGARCH","gjrGARCH","eGARCH","fGARCH","apARCH")[2], 
+                                              
+                                              garchOrder = c(1, 1)), 
+                        
+                        mean.model = list(armaOrder = c(1, 0), include.mean = TRUE), 
+                        
+                        distribution.model = c("norm", "snorm", "std", "sstd", "ged", "sged", "nig", "ghyp", "jsu")[3])
+# Now to fit, I use as.matrix and the data - this way the plot functions we will use later will work.
+garchfit2 = ugarchfit(spec = gjrgarch11, data = as.matrix(Rtn)) 
+
+garchfit2@fit$matcoef %>% xtable()
+```
+
+    ## % latex table generated in R 4.0.4 by xtable 1.8-4 package
+    ## % Sat Dec  4 22:34:58 2021
+    ## \begin{table}[ht]
+    ## \centering
+    ## \begin{tabular}{rrrrr}
+    ##   \hline
+    ##  &  Estimate &  Std. Error &  t value & Pr($>$$|$t$|$) \\ 
+    ##   \hline
+    ## mu & 0.00 & 0.00 & 1.02 & 0.31 \\ 
+    ##   ar1 & -0.02 & 0.01 & -2.37 & 0.02 \\ 
+    ##   omega & 0.00 & 0.00 & 0.07 & 0.95 \\ 
+    ##   alpha1 & 0.05 & 0.00 & 15.92 & 0.00 \\ 
+    ##   beta1 & 0.96 & 0.00 & 2032.78 & 0.00 \\ 
+    ##   gamma1 & -0.02 & 0.00 & -5.14 & 0.00 \\ 
+    ##   shape & 3.01 & 0.10 & 29.31 & 0.00 \\ 
+    ##    \hline
+    ## \end{tabular}
+    ## \end{table}
