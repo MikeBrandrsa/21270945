@@ -2711,11 +2711,11 @@ plot(garchfit1, which = 8)
 plot(garchfit1, which = 3)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-35-1.png) \# Note
-for the above plot - the blue line is sigma, gray line \# epsilon
-(i.e. sigma + noise.): notice the massive \# distorting impact of noise
-in ordinary epsilon, or squared \# error / S.D. measures: which are
-typically used for \# proxying vol.
+![](README_files/figure-markdown_github/unnamed-chunk-35-1.png) Note for
+the above plot - the blue line is sigma, gray line epsilon (i.e. sigma +
+noise.): notice the massive distorting impact of noise in ordinary
+epsilon, or squared error / S.D. measures: which are typically used for
+proxying vol.
 
 ``` r
 gjrgarch11 = ugarchspec(variance.model = list(model = c("sGARCH","gjrGARCH","eGARCH","fGARCH","apARCH")[2], 
@@ -2732,7 +2732,7 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
     ## % latex table generated in R 4.0.4 by xtable 1.8-4 package
-    ## % Sat Dec  4 22:34:58 2021
+    ## % Sun Dec  5 01:03:06 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{rrrrr}
@@ -2749,3 +2749,278 @@ garchfit2@fit$matcoef %>% xtable()
     ##    \hline
     ## \end{tabular}
     ## \end{table}
+
+# Question 5: MSCI Funds
+
+``` r
+msci <- read_rds("data/msci.rds")
+bonds <- read_rds("data/bonds_10y.rds")
+comms <- read_rds("data/comms.rds")
+```
+
+Definition of MSCI series:
+
+These are daily Total Return series for MSCI funds. The names are
+self-explanatory, with MSCI_RE being the global real estate fund,
+MSCI_USREIT being the US real estate fund, and MSCI_ACWI the MSCI All
+Country World Index.
+
+``` r
+library(lubridate)
+Q5MSCI <-msci %>% spread(Name, Price) %>% select(date, MSCI_ACWI, MSCI_RE)
+
+Q5bond <- bonds %>% spread(Name, Bond_10Yr) %>% select(date, US_10Yr)
+
+Q5Com <- comms %>%  spread(Name, Price) %>% select(date, Bcom_Index)
+
+Q5Diverspotential <- Q5MSCI %>% left_join( Q5bond, by = c("date")) %>% 
+    left_join( Q5Com, by = c("date")) %>% gather(Tickers, Price, -date) %>%
+    group_by(Tickers) %>%
+    filter(date > as.Date("2000-01-01")) %>% arrange(date) %>%  
+    group_by(Tickers) %>%  mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret, na.rm = T))) %>% filter(date > dplyr::first(date)) %>%  ungroup()
+```
+
+``` r
+pacman::p_load("MTS", "robustbase")
+pacman::p_load("tidyverse", "devtools", "rugarch", "rmgarch", 
+    "forecast", "tbl2xts", "lubridate", "PerformanceAnalytics", 
+    "ggthemes")
+Q5xts_rtn <- Q5Diverspotential %>% tbl_xts(., cols_to_xts = "dlogret", spread_by = "Tickers")
+MarchTest(Q5xts_rtn)
+```
+
+    ## Q(m) of squared series(LM test):  
+    ## Test statistic:  10164.13  p-value:  0 
+    ## Rank-based Test:  
+    ## Test statistic:  3155.677  p-value:  0 
+    ## Q_k(m) of squared series:  
+    ## Test statistic:  15395.03  p-value:  0 
+    ## Robust Test(5%) :  4092.611  p-value:  0
+
+``` r
+DCCPre <- dccPre(Q5xts_rtn, include.mean = T, p = 0)
+```
+
+    ## Sample mean of the returns:  0.000208785 0.0001418141 -0.0002536672 2.035793e-05
+
+    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
+    ##   Consider formula(paste(x, collapse = " ")) instead.
+
+    ## Component:  1 
+    ## Estimates:  1e-06 0.113459 0.875184 
+    ## se.coef  :  0 0.009054 0.009283 
+    ## t-value  :  6.241081 12.53092 94.27625
+
+    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
+    ##   Consider formula(paste(x, collapse = " ")) instead.
+
+    ## Component:  2 
+    ## Estimates:  1e-06 0.104172 0.882701 
+    ## se.coef  :  0 0.009086 0.009786 
+    ## t-value  :  5.841421 11.46542 90.1977
+
+    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
+    ##   Consider formula(paste(x, collapse = " ")) instead.
+
+    ## Component:  3 
+    ## Estimates:  1e-06 0.067626 0.932375 
+    ## se.coef  :  0 0.005651 0.00529 
+    ## t-value  :  3.767026 11.96606 176.2464
+
+    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
+    ##   Consider formula(paste(x, collapse = " ")) instead.
+
+    ## Component:  4 
+    ## Estimates:  1e-06 0.042187 0.951532 
+    ## se.coef  :  0 0.00422 0.004845 
+    ## t-value  :  4.224749 9.997587 196.413
+
+``` r
+Vol <- DCCPre$marVol
+colnames(Vol) <- colnames(Q5xts_rtn)
+Vol <- 
+  data.frame( cbind( date = index(Q5xts_rtn), Vol)) %>% # Add date column which dropped away...
+  mutate(date = as.Date(date)) %>%  tbl_df()  # make date column a date column...
+```
+
+    ## Warning: `tbl_df()` was deprecated in dplyr 1.0.0.
+    ## Please use `tibble::as_tibble()` instead.
+    ## This warning is displayed once every 8 hours.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated.
+
+``` r
+TidyVol <- Vol %>% gather(Stocks, Sigma, -date)
+ggplot(TidyVol) + geom_line(aes(x = date, y = Sigma, colour = Stocks))
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-41-1.png)
+
+``` r
+StdRes <- DCCPre$sresi
+
+cl = makePSOCKcluster(10)
+pacman::p_load("tidyverse", "tbl2xts", "broom")
+
+uspec <- ugarchspec(
+    variance.model = list(model = "gjrGARCH", 
+    garchOrder = c(1, 1)), 
+    mean.model = list(armaOrder = c(1, 
+    0), include.mean = TRUE), 
+    distribution.model = "sstd")
+
+multi_univ_garch_spec <- multispec(replicate(ncol(Q5xts_rtn), uspec))
+
+spec.go <- gogarchspec(multi_univ_garch_spec, 
+                       distribution.model = 'mvnorm', # or manig.
+                       ica = 'fastica') # Note: we use the fastICA
+cl <- makePSOCKcluster(10)
+
+multf <- multifit(multi_univ_garch_spec, Q5xts_rtn, cluster = cl)
+
+fit.gogarch <- gogarchfit(spec.go, 
+                      data = Q5xts_rtn, 
+                      solver = 'hybrid', 
+                      cluster = cl, 
+                      gfun = 'tanh', 
+                      maxiter1 = 40000, 
+                      epsilon = 1e-08, 
+                      rseed = 100)
+
+print(fit.gogarch)
+```
+
+    ## 
+    ## *------------------------------*
+    ## *        GO-GARCH Fit          *
+    ## *------------------------------*
+    ## 
+    ## Mean Model       : CONSTANT
+    ## GARCH Model      : sGARCH
+    ## Distribution : mvnorm
+    ## ICA Method       : fastica
+    ## No. Factors      : 4
+    ## No. Periods      : 5694
+    ## Log-Likelihood   : 74784.65
+    ## ------------------------------------
+    ## 
+    ## U (rotation matrix) : 
+    ## 
+    ##         [,1]    [,2]    [,3]   [,4]
+    ## [1,] -0.9147 -0.0633  0.1693  0.361
+    ## [2,] -0.3874  0.2252 -0.1166 -0.886
+    ## [3,]  0.0271  0.9719  0.0109  0.234
+    ## [4,] -0.1117 -0.0269 -0.9786  0.171
+    ## 
+    ## A (mixing matrix) : 
+    ## 
+    ##          [,1]      [,2]      [,3]     [,4]
+    ## [1,] 0.001093  0.000467 -0.005396 -0.00838
+    ## [2,] 0.000278 -0.000890  0.001151 -0.01071
+    ## [3,] 0.023901  0.000784 -0.003527 -0.00580
+    ## [4,] 0.000542  0.009137 -0.000441 -0.00381
+
+``` r
+gog.time.var.cor <- rcor(fit.gogarch)
+gog.time.var.cor <- aperm(gog.time.var.cor,c(3,2,1))
+dim(gog.time.var.cor) <- c(nrow(gog.time.var.cor), ncol(gog.time.var.cor)^2)
+# Finally:
+```
+
+``` r
+renamingdcc <- function(ReturnSeries, DCC.TV.Cor) {
+  
+ncolrtn <- ncol(ReturnSeries)
+namesrtn <- colnames(ReturnSeries)
+paste(namesrtn, collapse = "_")
+
+nam <- c()
+xx <- mapply(rep, times = ncolrtn:1, x = namesrtn)
+# Now let's be creative in designing a nested for loop to save the names corresponding to the columns of interest.. 
+
+# TIP: draw what you want to achieve on a paper first. Then apply code.
+
+# See if you can do this on your own first.. Then check vs my solution:
+
+nam <- c()
+for (j in 1:(ncolrtn)) {
+for (i in 1:(ncolrtn)) {
+  nam[(i + (j-1)*(ncolrtn))] <- paste(xx[[j]][1], xx[[i]][1], sep="_")
+}
+}
+
+colnames(DCC.TV.Cor) <- nam
+
+# So to plot all the time-varying correlations wrt SBK:
+ # First append the date column that has (again) been removed...
+DCC.TV.Cor <- 
+    data.frame( cbind( date = index(ReturnSeries), DCC.TV.Cor)) %>% # Add date column which dropped away...
+    mutate(date = as.Date(date)) %>%  tbl_df() 
+
+DCC.TV.Cor <- DCC.TV.Cor %>% gather(Pairs, Rho, -date)
+
+DCC.TV.Cor
+
+}
+gog.time.var.cor <- renamingdcc(ReturnSeries = Q5xts_rtn, DCC.TV.Cor = gog.time.var.cor)
+```
+
+``` r
+Q5compplot <- ggplot(gog.time.var.cor %>% filter(grepl("Bcom_", Pairs), 
+    !grepl("_Bcom", Pairs))) + geom_line(aes(x = date, y = Rho, 
+    colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: Bcom")
+
+print(Q5compplot)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-45-1.png)
+
+``` r
+Q5bondplot <- ggplot(gog.time.var.cor %>% filter(grepl("US_10Yr", Pairs), 
+    !grepl("_US", Pairs))) + geom_line(aes(x = date, y = Rho, 
+    colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: US_10Yr")
+
+print(Q5bondplot)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-46-1.png)
+
+``` r
+Q5ACWIplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_ACWI", Pairs), 
+    !grepl("_MSCI_ACWI", Pairs))) + geom_line(aes(x = date, y = Rho, 
+    colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: ACWI")
+
+print(Q5ACWIplot)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-47-1.png)
+
+``` r
+Q5REplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_RE", Pairs), 
+    !grepl("_MSCI_RE", Pairs))) + geom_line(aes(x = date, y = Rho, 
+    colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: RE")
+
+print(Q5ACWIplot)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-48-1.png)
+
+``` r
+library(cowplot)
+```
+
+    ## 
+    ## Attaching package: 'cowplot'
+
+    ## The following object is masked from 'package:ggthemes':
+    ## 
+    ##     theme_map
+
+    ## The following object is masked from 'package:lubridate':
+    ## 
+    ##     stamp
+
+``` r
+plot_grid(Q5bondplot, Q5ACWIplot, Q5REplot , Q5compplot, labels = c('', '', '',''))
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-49-1.png)
