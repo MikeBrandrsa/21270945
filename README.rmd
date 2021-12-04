@@ -21,7 +21,12 @@ library(tidyverse)
 list.files('code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
 ```
 
-output
-test
+```{r}
+# HTML Texevier:
+Texevier::create_template_html(directory = "Questions",
+                          template_name = "Question1"
+)
+
+```
 
 
