@@ -165,29 +165,6 @@ graph above that some values were not desirable, For a successful
 correlation matrix to be run and R I need to fill any values that might
 cause problems,
 
-    ## # A tibble: 3,458 × 89
-    ##    date       `ABG SJ Equity` `ACL SJ Equity` `AEG SJ Equity` `AGL SJ Equity`
-    ##    <date>               <dbl>           <dbl>           <dbl>           <dbl>
-    ##  1 2008-01-02       -0.000524        0.0257           0.00784        0.00996 
-    ##  2 2008-01-03       -0.0185         -0.000625         0.00291       -0.0117  
-    ##  3 2008-01-04       -0.0115          0.00438         -0.0183        -0.00240 
-    ##  4 2008-01-07       -0.0171         -0.00347         -0.0221        -0.0272  
-    ##  5 2008-01-08        0.0192          0.0197           0.0175        -0.00555 
-    ##  6 2008-01-09       -0.00987         0.0159          -0.0231        -0.0356  
-    ##  7 2008-01-10       -0.0128         -0.0260          -0.0428        -0.0237  
-    ##  8 2008-01-11       -0.0174         -0.0227          -0.0440         0.00470 
-    ##  9 2008-01-14        0.0281          0.0363           0.00398        0.0157  
-    ## 10 2008-01-15       -0.0144          0.00708         -0.0291        -0.000591
-    ## # … with 3,448 more rows, and 84 more variables: AMS SJ Equity <dbl>,
-    ## #   ANG SJ Equity <dbl>, APN SJ Equity <dbl>, ARI SJ Equity <dbl>,
-    ## #   ASR SJ Equity <dbl>, AXL SJ Equity <dbl>, BAT SJ Equity <dbl>,
-    ## #   BAW SJ Equity <dbl>, BHP SJ Equity <dbl>, BID SJ Equity <dbl>,
-    ## #   BTI SJ Equity <dbl>, BVT SJ Equity <dbl>, CCO SJ Equity <dbl>,
-    ## #   CFR SJ Equity <dbl>, CLS SJ Equity <dbl>, CPI SJ Equity <dbl>,
-    ## #   DSY SJ Equity <dbl>, EXX SJ Equity <dbl>, FFA SJ Equity <dbl>, …
-
-    ## [1] FALSE
-
 The above code is a direct way in which I imputed the returns of
 individual stocks taken from the distribution of all of the constituents
 of the return series. As this is a PCA directed approach it made sense
@@ -2596,7 +2573,7 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
     ## % latex table generated in R 4.0.4 by xtable 1.8-4 package
-    ## % Sun Dec  5 08:24:06 2021
+    ## % Sun Dec  5 08:54:15 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{rrrrr}
@@ -2954,20 +2931,34 @@ fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
 
 ![](README_files/figure-markdown_github/unnamed-chunk-54-1.png) This is
 extremely useful as it reports on the behaviour of these returns and
-shows how the density of distribution changes with the change in pairs
+shows how the density of distribution changes with the change in pairs.
+Most notably the US 10 year year shows significantly higher degrees of
+dispersion and clearly follows a different distribution process to the
+other three indices.
 
 # Question 6: Portfolio Construction
 
 In this question we construct a global balanced index fund portfolio
-using a mix of traded global indices that we load below. type of
-optimzer tells us by constraints so wont be max mean eg. before the
-optimsations considerations - look at data and clean.
+using a mix of traded global indices that we load below. From the
+question I can already gain a clear understanding of the type of
+optimiser that will be preferred from a subjective perspective. What I
+mean by this is that The constraints are structured in a way that
+suggest a more moderate wealth preserving type portfolio need be
+constructed.As I’ve spent some time trying to build optimisers by hand
+in preparation for this question I’ve come across a helpful package but
+I feel does the best job of allowing for very flexible constraints.For
+this reason I load the data in and open the portfolio analytics package.
+Before integrating it straight in I clean the data as normal.
 
 ``` r
 Q6MAA <- read_rds("data/MAA.rds")
 Q6msci <- read_rds("data/msci.rds") %>%
   filter(Name %in% c("MSCI_ACWI", "MSCI_USA", "MSCI_RE", "MSCI_Jap"))
 ```
+
+For easeability in the constraints section of the optimisation procedure
+I’ve proceeded to rename the indices so that the object orientated
+group-by constraints are easily carried out.
 
 ``` r
 Q6MAAwide <- Q6MAA %>% select(date, Ticker, Price) %>% spread(Ticker, Price)
@@ -2998,10 +2989,14 @@ Q6totalrtn3 <- Q6totalrtn2 %>% select(date, Tickers, dlogret) %>%
     spread(Tickers, dlogret)
 ```
 
-mvo from 1st priciples gets tricky with additional constrsints and vxvr
-wont let you add the group constsints
+I will once more emphasise that the mean variance optimiser as well as
+other packages such as CVXR are quite tricky in terms of flexible
+constraints. Whilst I will give this optimisation procedure various
+objectives the main objective will be a wolf preserving risk adjusted
+return objective.
 
-welath preserving CPI plus2-3
+I then convert the data into a timeseries and load in the packages and
+plugins.
 
 ``` r
 Q6rtn <- Q6totalrtn3 %>% tbl_xts()
@@ -3041,6 +3036,14 @@ library(PortfolioAnalytics)
     ## The following objects are masked from 'package:ROI':
     ## 
     ##     is.constraint, objective
+
+Below I specify the portfolio that will take on the constraint arguments
+there after the specific constraints that I specify are as follows: Full
+investment must take place and long only positions are added. And
+objective is then added to minimise portfolio standard deviation as an
+initial starting point in this optimiser but will be changed later
+on.The optimisation procedure is then initiated and the return on
+investment method is specified.
 
 ``` r
 port_spec <- portfolio.spec(colnames(Q6rtn))
@@ -3085,9 +3088,10 @@ extractWeights(opt)
 chart.Weights(opt)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-57-1.png) Above we
-explored the most simple approach with a simple objective with added
-constraints.
+![](README_files/figure-markdown_github/unnamed-chunk-58-1.png) As
+mentioned we explore the most simple case above and we print out the
+results in terms of weights it now becomes clear why the names were
+changed.
 
 ``` r
 print(port_spec)
@@ -3116,16 +3120,21 @@ print(port_spec)
     ## Enabled objective names
     ##      - StdDev
 
-As mentioned we explore the constraints and acid here.
+V last three constraints are then implemented below into a more complex
+optimiser as follows: A box constraint is implemented when no single
+asset may constitute more than 40% of the portfolio, And following this
+to group constraints are initialised for equity and bond instruments
+where equity cannot collectively constitute more than 60% and bonds
+can’t constitute more than 25%.
 
 ``` r
 port_spec <- add.constraint(portfolio = port_spec, type = "weight_sum", min_sum = 1, max_sum = 1)
 
 port_spec <- add.constraint(portfolio = port_spec, type = "box", min = 0, max = 0.4)
 
-port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(4, 5, 7, 8, 10, 11)), group_min = 0, group_max = 0.25)
+port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(3, 4, 6, 7, 9, 10)), group_min = 0, group_max = 0.25)
 
-port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(6, 9, 13)), group_min = 0, group_max = 0.6)
+port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(5, 8, 12)), group_min = 0, group_max = 0.6)
 
 print(port_spec)
 ```
@@ -3157,10 +3166,12 @@ print(port_spec)
     ## Enabled objective names
     ##      - StdDev
 
+Following this the objectives and constraints are once again specified.
+
 ``` r
 port_spec <- add.objective(portfolio = port_spec, type = "return", name = "mean")
 
-# Add a risk objective to minimize portfolio standard deviation
+# Added a risk objective to minimize portfolio standard deviation
 port_spec <- add.objective(portfolio = port_spec, type = "risk", name = "StdDev")
 
 # Add a risk budget objective
@@ -3198,6 +3209,9 @@ print(port_spec)
     ##      - mean 
     ##      - StdDev 
     ##      - StdDev
+
+With the risk budget and the minimised portfolio standard deviation
+objective added we now run a single parent optimisation first.
 
 ``` r
 rp <- random_portfolios(portfolio=port_spec, permutations = 50, rp_method ='simplex')
@@ -3260,7 +3274,10 @@ print(opt)
 chart.Weights(opt)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-61-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-62-1.png) With
+this initial waiting procedure estimated we now run a periodic
+rebalancing optimisation using the 60 day rolling window and quarterly
+re-balancing.
 
 ``` r
 opt_rebal <- optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, optimize_method = "random", rp = rp, trace = TRUE, search_size = 1000, rebalance_on = "quarters", training_period = 60, rolling_window = 60)
@@ -3482,6 +3499,9 @@ extractObjectiveMeasures(opt)
     ##         mean 
     ## 0.0001843209
 
+Above we observe that rebalance states are also given within the
+portfolio.
+
 ``` r
 head(extractObjectiveMeasures(opt_rebal))
 ```
@@ -3501,16 +3521,27 @@ extractWeights(opt)
 chart.Weights(opt)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-64-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-65-1.png) With the
+optimal rebalance procedure undertaken the weights are then given where
+after they are charted as seen above. This is then compared to the
+optimal chart wait to observe the difference between the in and out of
+sample fit.
 
 ``` r
 chart.Weights(opt_rebal)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-65-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-66-1.png) Lastly
+from our econometric background it is clear that not all assets display
+the same amount of contribution towards risk for this reason we plug the
+risk contribution and observe that global equity US bonds and US
+property display the highest Degrees of risks.
 
 ``` r
 chart.RiskBudget(opt_rebal, match.col = "StdDev", risk.type = "percentage")
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-66-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-67-1.png) We
+conclude with a mention of the initial objective which was a wealthy
+preserving optimiser given the type of constraints for this reason we
+see a very modest return but very well risk adjusted.
