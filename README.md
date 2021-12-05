@@ -2732,7 +2732,7 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
     ## % latex table generated in R 4.0.4 by xtable 1.8-4 package
-    ## % Sun Dec  5 01:58:38 2021
+    ## % Sun Dec  5 03:50:02 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{rrrrr}
@@ -3076,3 +3076,693 @@ fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
 Note: This is a very useful figure to include in your reports on the
 behaviour of returns data as it shows similarity in distribution and
 density between the returns.
+
+# Question 6: Portfolio Construction
+
+``` r
+Q6MAA <- read_rds("data/MAA.rds")
+Q6msci <- read_rds("data/msci.rds") %>%
+  filter(Name %in% c("MSCI_ACWI", "MSCI_USA", "MSCI_RE", "MSCI_Jap"))
+```
+
+``` r
+Q6MAAwide <- Q6MAA %>% select(date, Ticker, Price) %>% spread(Ticker, Price)
+Q6msciwide <- Q6msci %>% spread(Name, Price) 
+
+Q6totalrtn <- Q6MAAwide %>% left_join(Q6msciwide, by = c("date")) %>% rename(
+     "Asian_Currency" = `ADXY Index` ,
+    "US_Currency" = `DXY Index` ,
+    "Global_Bond1" = `LGAGTRUH Index`,
+     "US_Bond1" = `LUAGTRUU Index`,
+    "Euro_Bond1" = `LEATTREU Index`,
+    "Global_Bond2" = `LGCPTRUH Index`,
+    "US_Bond2" = `LUACTRUU Index`,
+    "Euro_Bond2" = `LP05TREH Index`,
+    "Commodity" = `BCOMTR Index`,
+    "Japan_Equity" = `MSCI_Jap`,
+    "US_Property" = `MSCI_RE`,
+    "US_Equity" = `MSCI_USA`,
+    "Global Equity" = `MSCI_ACWI`
+)
+ 
+Q6totalrtn2  <- Q6totalrtn %>%  gather(Tickers, Price, -date) %>%
+    group_by(Tickers) %>%  filter(date > as.Date("2000-01-01")) %>% arrange(date) %>%  
+    group_by(Tickers) %>%  mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret, na.rm = T))) %>% filter(date > dplyr::first(date)) %>% 
+    ungroup() 
+
+Q6totalrtn3 <- Q6totalrtn2 %>% select(date, Tickers, dlogret) %>% 
+    spread(Tickers, dlogret)
+```
+
+``` r
+Q6rtn <- Q6totalrtn3 %>% tbl_xts()
+
+library(ROI)
+```
+
+    ## ROI: R Optimization Infrastructure
+
+    ## Registered solver plugins: nlminb, glpk, quadprog.
+
+    ## Default solver: auto.
+
+``` r
+library(ROI.plugin.quadprog)
+library(ROI.plugin.glpk)
+library(PerformanceAnalytics)
+library(PortfolioAnalytics)
+```
+
+    ## Loading required package: foreach
+
+    ## 
+    ## Attaching package: 'foreach'
+
+    ## The following objects are masked from 'package:purrr':
+    ## 
+    ##     accumulate, when
+
+    ## Registered S3 method overwritten by 'PortfolioAnalytics':
+    ##   method           from
+    ##   print.constraint ROI
+
+    ## 
+    ## Attaching package: 'PortfolioAnalytics'
+
+    ## The following objects are masked from 'package:ROI':
+    ## 
+    ##     is.constraint, objective
+
+``` r
+port_spec <- portfolio.spec(colnames(Q6rtn))
+port_spec <- add.constraint(portfolio =port_spec, type = "full_investment")
+port_spec <- add.constraint(portfolio = port_spec, type = "long_only")
+port_spec <- add.objective(portfolio = port_spec, type = "risk", name = "StdDev")
+opt <- optimize.portfolio(Q6rtn, portfolio = port_spec, optimize_method = "ROI")
+print(opt)
+```
+
+    ## ***********************************
+    ## PortfolioAnalytics Optimization
+    ## ***********************************
+    ## 
+    ## Call:
+    ## optimize.portfolio(R = Q6rtn, portfolio = port_spec, optimize_method = "ROI")
+    ## 
+    ## Optimal Weights:
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##         0.3192         0.0146         0.0000         0.0000         0.0064 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##         0.5067         0.0000         0.0055         0.0000         0.0000 
+    ##    US_Currency      US_Equity    US_Property 
+    ##         0.1476         0.0000         0.0000 
+    ## 
+    ## Objective Measure:
+    ##    StdDev 
+    ## 0.0009714
+
+``` r
+extractWeights(opt)
+```
+
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##   3.191607e-01   1.460856e-02   1.075704e-17   3.207724e-18   6.407276e-03 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##   5.067218e-01   2.167819e-17   5.501330e-03   1.091242e-18   8.035830e-18 
+    ##    US_Currency      US_Equity    US_Property 
+    ##   1.476003e-01   0.000000e+00  -8.041650e-19
+
+``` r
+chart.Weights(opt)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-53-1.png) Above we
+explored the most simple approach with a simple objective with added
+constraints.
+
+``` r
+print(port_spec)
+```
+
+    ## **************************************************
+    ## PortfolioAnalytics Portfolio Specification 
+    ## **************************************************
+    ## 
+    ## Call:
+    ## portfolio.spec(assets = colnames(Q6rtn))
+    ## 
+    ## Number of assets: 13 
+    ## Asset Names
+    ##  [1] "Asian_Currency" "Commodity"      "Euro_Bond1"     "Euro_Bond2"    
+    ##  [5] "Global Equity"  "Global_Bond1"   "Global_Bond2"   "Japan_Equity"  
+    ##  [9] "US_Bond1"       "US_Bond2"      
+    ## More than 10 assets, only printing the first 10
+    ## 
+    ## Constraints
+    ## Enabled constraint types
+    ##      - full_investment 
+    ##      - long_only 
+    ## 
+    ## Objectives:
+    ## Enabled objective names
+    ##      - StdDev
+
+As mentioned we explore the constraints and acid here.
+
+``` r
+port_spec <- add.constraint(portfolio = port_spec, type = "weight_sum", min_sum = 1, max_sum = 1)
+
+port_spec <- add.constraint(portfolio = port_spec, type = "box", min = 0, max = 0.4)
+
+port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(4, 5, 7, 8, 10, 11)), group_min = 0, group_max = 0.25)
+
+port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(6, 9, 13)), group_min = 0, group_max = 0.6)
+
+print(port_spec)
+```
+
+    ## **************************************************
+    ## PortfolioAnalytics Portfolio Specification 
+    ## **************************************************
+    ## 
+    ## Call:
+    ## portfolio.spec(assets = colnames(Q6rtn))
+    ## 
+    ## Number of assets: 13 
+    ## Asset Names
+    ##  [1] "Asian_Currency" "Commodity"      "Euro_Bond1"     "Euro_Bond2"    
+    ##  [5] "Global Equity"  "Global_Bond1"   "Global_Bond2"   "Japan_Equity"  
+    ##  [9] "US_Bond1"       "US_Bond2"      
+    ## More than 10 assets, only printing the first 10
+    ## 
+    ## Constraints
+    ## Enabled constraint types
+    ##      - full_investment 
+    ##      - long_only 
+    ##      - weight_sum 
+    ##      - box 
+    ##      - group 
+    ##      - group 
+    ## 
+    ## Objectives:
+    ## Enabled objective names
+    ##      - StdDev
+
+``` r
+port_spec <- add.objective(portfolio = port_spec, type = "return", name = "mean")
+
+# Add a risk objective to minimize portfolio standard deviation
+port_spec <- add.objective(portfolio = port_spec, type = "risk", name = "StdDev")
+
+# Add a risk budget objective
+port_spec <- add.objective(portfolio = port_spec, type = "risk_budget", name = "StdDev", min_prisk = 0.05, max_prisk = 0.1)
+
+print(port_spec)
+```
+
+    ## **************************************************
+    ## PortfolioAnalytics Portfolio Specification 
+    ## **************************************************
+    ## 
+    ## Call:
+    ## portfolio.spec(assets = colnames(Q6rtn))
+    ## 
+    ## Number of assets: 13 
+    ## Asset Names
+    ##  [1] "Asian_Currency" "Commodity"      "Euro_Bond1"     "Euro_Bond2"    
+    ##  [5] "Global Equity"  "Global_Bond1"   "Global_Bond2"   "Japan_Equity"  
+    ##  [9] "US_Bond1"       "US_Bond2"      
+    ## More than 10 assets, only printing the first 10
+    ## 
+    ## Constraints
+    ## Enabled constraint types
+    ##      - full_investment 
+    ##      - long_only 
+    ##      - weight_sum 
+    ##      - box 
+    ##      - group 
+    ##      - group 
+    ## 
+    ## Objectives:
+    ## Enabled objective names
+    ##      - StdDev 
+    ##      - mean 
+    ##      - StdDev 
+    ##      - StdDev
+
+``` r
+rp <- random_portfolios(portfolio=port_spec, permutations = 50, rp_method ='simplex')
+```
+
+    ## Warning: executing %dopar% sequentially: no parallel backend registered
+
+``` r
+opt <- optimize.portfolio(R = Q6rtn, portfolio = port_spec, optimize_method = "random", rp = rp, trace = TRUE)
+```
+
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+
+``` r
+print(opt)
+```
+
+    ## ***********************************
+    ## PortfolioAnalytics Optimization
+    ## ***********************************
+    ## 
+    ## Call:
+    ## optimize.portfolio(R = Q6rtn, portfolio = port_spec, optimize_method = "random", 
+    ##     trace = TRUE, rp = rp)
+    ## 
+    ## Optimal Weights:
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##         0.0513         0.0275         0.1521         0.0896         0.0037 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##         0.0093         0.1730         0.1237         0.0692         0.1778 
+    ##    US_Currency      US_Equity    US_Property 
+    ##         0.0048         0.0831         0.0350 
+    ## 
+    ## Objective Measures:
+    ##   StdDev 
+    ## 0.002787 
+    ## 
+    ## contribution :
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##      4.321e-05      8.348e-05      1.244e-04      7.462e-05      2.217e-05 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##      4.284e-06      2.035e-04      1.213e-03      5.150e-05      2.904e-04 
+    ##    US_Currency      US_Equity    US_Property 
+    ##     -7.099e-06      4.288e-04      2.547e-04 
+    ## 
+    ## pct_contrib_StdDev :
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##       0.015506       0.029956       0.044654       0.026778       0.007954 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##       0.001537       0.073018       0.435188       0.018479       0.104202 
+    ##    US_Currency      US_Equity    US_Property 
+    ##      -0.002547       0.153887       0.091389 
+    ## 
+    ## 
+    ##      mean 
+    ## 4.321e-05
+
+``` r
+chart.Weights(opt)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-57-1.png)
+
+``` r
+opt_rebal <- optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, optimize_method = "random", rp = rp, trace = TRUE, search_size = 1000, rebalance_on = "quarters", training_period = 60, rolling_window = 60)
+```
+
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+    ## Leverage constraint min_sum and max_sum are restrictive, 
+    ##               consider relaxing. e.g. 'full_investment' constraint should be min_sum=0.99 and max_sum=1.01
+
+``` r
+print(opt_rebal)
+```
+
+    ## **************************************************
+    ## PortfolioAnalytics Optimization with Rebalancing
+    ## **************************************************
+    ## 
+    ## Call:
+    ## optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, 
+    ##     optimize_method = "random", search_size = 1000, trace = TRUE, 
+    ##     rp = rp, rebalance_on = "quarters", training_period = 60, 
+    ##     rolling_window = 60)
+    ## 
+    ## Number of rebalancing dates:  80 
+    ## First rebalance date:
+    ## [1] "2002-03-29"
+    ## Last rebalance date:
+    ## [1] "2021-10-29"
+    ## 
+    ## Annualized Portfolio Rebalancing Return:
+    ## [1] 0.04514679
+    ## 
+    ## Annualized Portfolio Standard Deviation:
+    ## [1] 0.04316011
+
+``` r
+extractObjectiveMeasures(opt)
+```
+
+    ## $StdDev
+    ## $StdDev$StdDev
+    ## [1] 0.002786754
+    ## 
+    ## $StdDev$contribution
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##   4.321025e-05   8.347874e-05   1.244410e-04   7.462282e-05   2.216557e-05 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##   4.283603e-06   2.034846e-04   1.212761e-03   5.149621e-05   2.903853e-04 
+    ##    US_Currency      US_Equity    US_Property 
+    ##  -7.098864e-06   4.288442e-04   2.546795e-04 
+    ## 
+    ## $StdDev$pct_contrib_StdDev
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##    0.015505584    0.029955547    0.044654464    0.026777683    0.007953901 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##    0.001537130    0.073018492    0.435187749    0.018478921    0.104201971 
+    ##    US_Currency      US_Equity    US_Property 
+    ##   -0.002547359    0.153886633    0.091389283 
+    ## 
+    ## 
+    ## $mean
+    ##         mean 
+    ## 0.0001843209
+
+``` r
+head(extractObjectiveMeasures(opt_rebal))
+```
+
+    ##                 StdDev StdDev.contribution.Asian_Currency
+    ## 2002-03-29 0.002709891                       7.395666e-06
+    ## 2002-06-28 0.001809918                       1.109102e-05
+    ## 2002-09-30 0.002978499                       3.919678e-05
+    ## 2002-12-31 0.002072988                       4.078287e-06
+    ## 2003-03-31 0.002194048                       1.496006e-05
+    ## 2003-06-30 0.002711376                       1.642121e-05
+    ##            StdDev.contribution.Commodity StdDev.contribution.Euro_Bond1
+    ## 2002-03-29                  1.745176e-05                   6.015076e-05
+    ## 2002-06-28                  3.579080e-05                   5.079315e-05
+    ## 2002-09-30                  5.813637e-05                   3.181384e-05
+    ## 2002-12-31                 -4.718263e-06                   1.164897e-04
+    ## 2003-03-31                  3.840602e-05                   1.070996e-04
+    ## 2003-06-30                  6.964116e-05                   2.265327e-04
+    ##            StdDev.contribution.Euro_Bond2 StdDev.contribution.Global Equity
+    ## 2002-03-29                   2.958356e-05                      5.245016e-07
+    ## 2002-06-28                   3.456684e-05                      1.447012e-05
+    ## 2002-09-30                   3.630870e-05                      2.480464e-05
+    ## 2002-12-31                   4.586925e-05                      2.126869e-07
+    ## 2003-03-31                   6.495370e-05                      6.459165e-06
+    ## 2003-06-30                   1.289531e-04                      1.028477e-05
+    ##            StdDev.contribution.Global_Bond1 StdDev.contribution.Global_Bond2
+    ## 2002-03-29                     2.642605e-07                     1.503666e-04
+    ## 2002-06-28                     1.549381e-06                     4.488279e-05
+    ## 2002-09-30                     3.699432e-06                     1.639673e-04
+    ## 2002-12-31                     3.730562e-07                     2.336451e-04
+    ## 2003-03-31                     4.054919e-06                     1.347622e-04
+    ## 2003-06-30                     1.041464e-05                     2.852028e-04
+    ##            StdDev.contribution.Japan_Equity StdDev.contribution.US_Bond1
+    ## 2002-03-29                      0.001936524                 2.199636e-05
+    ## 2002-06-28                      0.001140546                 1.046288e-05
+    ## 2002-09-30                      0.001522970                 5.835844e-05
+    ## 2002-12-31                      0.001182926                 3.462062e-05
+    ## 2003-03-31                      0.001378155                 5.390955e-05
+    ## 2003-06-30                      0.001239373                 1.085136e-04
+    ##            StdDev.contribution.US_Bond2 StdDev.contribution.US_Currency
+    ## 2002-03-29                 2.159839e-04                   -1.859533e-07
+    ## 2002-06-28                 5.401629e-05                   -4.205559e-06
+    ## 2002-09-30                 2.656125e-04                   -9.369966e-06
+    ## 2002-12-31                 3.416027e-04                   -8.722156e-08
+    ## 2003-03-31                 1.855855e-04                   -8.561244e-06
+    ## 2003-06-30                 3.811754e-04                   -1.166440e-05
+    ##            StdDev.contribution.US_Equity StdDev.contribution.US_Property
+    ## 2002-03-29                  2.180590e-04                    5.177607e-05
+    ## 2002-06-28                  3.248891e-04                    9.106515e-05
+    ## 2002-09-30                  6.058446e-04                    1.771556e-04
+    ## 2002-12-31                  8.977588e-05                    2.819939e-05
+    ## 2003-03-31                  7.982290e-05                    1.344406e-04
+    ## 2003-06-30                  1.365184e-04                    1.100092e-04
+    ##            StdDev.pct_contrib_StdDev.Asian_Currency
+    ## 2002-03-29                              0.002729138
+    ## 2002-06-28                              0.006127909
+    ## 2002-09-30                              0.013159913
+    ## 2002-12-31                              0.001967348
+    ## 2003-03-31                              0.006818476
+    ## 2003-06-30                              0.006056414
+    ##            StdDev.pct_contrib_StdDev.Commodity
+    ## 2002-03-29                         0.006440022
+    ## 2002-06-28                         0.019774814
+    ## 2002-09-30                         0.019518684
+    ## 2002-12-31                        -0.002276069
+    ## 2003-03-31                         0.017504642
+    ## 2003-06-30                         0.025684808
+    ##            StdDev.pct_contrib_StdDev.Euro_Bond1
+    ## 2002-03-29                           0.02219675
+    ## 2002-06-28                           0.02806378
+    ## 2002-09-30                           0.01068117
+    ## 2002-12-31                           0.05619413
+    ## 2003-03-31                           0.04881372
+    ## 2003-06-30                           0.08354898
+    ##            StdDev.pct_contrib_StdDev.Euro_Bond2
+    ## 2002-03-29                           0.01091688
+    ## 2002-06-28                           0.01909856
+    ## 2002-09-30                           0.01219027
+    ## 2002-12-31                           0.02212712
+    ## 2003-03-31                           0.02960451
+    ## 2003-06-30                           0.04756003
+    ##            StdDev.pct_contrib_StdDev.Global Equity
+    ## 2002-03-29                            0.0001935508
+    ## 2002-06-28                            0.0079949031
+    ## 2002-09-30                            0.0083279006
+    ## 2002-12-31                            0.0001025992
+    ## 2003-03-31                            0.0029439491
+    ## 2003-06-30                            0.0037931909
+    ##            StdDev.pct_contrib_StdDev.Global_Bond1
+    ## 2002-03-29                           9.751702e-05
+    ## 2002-06-28                           8.560503e-04
+    ## 2002-09-30                           1.242046e-03
+    ## 2002-12-31                           1.799606e-04
+    ## 2003-03-31                           1.848145e-03
+    ## 2003-06-30                           3.841089e-03
+    ##            StdDev.pct_contrib_StdDev.Global_Bond2
+    ## 2002-03-29                             0.05548805
+    ## 2002-06-28                             0.02479824
+    ## 2002-09-30                             0.05505032
+    ## 2002-12-31                             0.11270935
+    ## 2003-03-31                             0.06142171
+    ## 2003-06-30                             0.10518748
+    ##            StdDev.pct_contrib_StdDev.Japan_Equity
+    ## 2002-03-29                              0.7146134
+    ## 2002-06-28                              0.6301645
+    ## 2002-09-30                              0.5113215
+    ## 2002-12-31                              0.5706385
+    ## 2003-03-31                              0.6281335
+    ## 2003-06-30                              0.4571012
+    ##            StdDev.pct_contrib_StdDev.US_Bond1
+    ## 2002-03-29                        0.008117067
+    ## 2002-06-28                        0.005780856
+    ## 2002-09-30                        0.019593240
+    ## 2002-12-31                        0.016700833
+    ## 2003-03-31                        0.024570820
+    ## 2003-06-30                        0.040021604
+    ##            StdDev.pct_contrib_StdDev.US_Bond2
+    ## 2002-03-29                         0.07970206
+    ## 2002-06-28                         0.02984460
+    ## 2002-09-30                         0.08917664
+    ## 2002-12-31                         0.16478761
+    ## 2003-03-31                         0.08458588
+    ## 2003-06-30                         0.14058377
+    ##            StdDev.pct_contrib_StdDev.US_Currency
+    ## 2002-03-29                         -6.862024e-05
+    ## 2002-06-28                         -2.323618e-03
+    ## 2002-09-30                         -3.145869e-03
+    ## 2002-12-31                         -4.207529e-05
+    ## 2003-03-31                         -3.902032e-03
+    ## 2003-06-30                         -4.302023e-03
+    ##            StdDev.pct_contrib_StdDev.US_Equity
+    ## 2002-03-29                          0.08046783
+    ## 2002-06-28                          0.17950484
+    ## 2002-09-30                          0.20340604
+    ## 2002-12-31                          0.04330748
+    ## 2003-03-31                          0.03638157
+    ## 2003-06-30                          0.05035024
+    ##            StdDev.pct_contrib_StdDev.US_Property          mean
+    ## 2002-03-29                            0.01910633 -1.622094e-05
+    ## 2002-06-28                            0.05031451  1.318459e-04
+    ## 2002-09-30                            0.05947815 -1.241916e-04
+    ## 2002-12-31                            0.01360326  5.589697e-04
+    ## 2003-03-31                            0.06127514 -2.776061e-06
+    ## 2003-06-30                            0.04057321  9.162939e-04
+
+``` r
+extractWeights(opt)
+```
+
+    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
+    ##    0.051281439    0.027468279    0.152051626    0.089642112    0.003716800 
+    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
+    ##    0.009268695    0.172951483    0.123664660    0.069167981    0.177829690 
+    ##    US_Currency      US_Equity    US_Property 
+    ##    0.004803425    0.083124285    0.035029525
+
+``` r
+chart.Weights(opt)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-58-1.png)
+
+``` r
+chart.Weights(opt_rebal)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-59-1.png)
+
+``` r
+chart.RiskBudget(opt_rebal, match.col = "StdDev", risk.type = "percentage")
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-59-2.png)

@@ -704,3 +704,116 @@ fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
 
 Note: This is a very useful figure to include in your reports on the behaviour of returns data as it shows similarity in distribution and density between the returns.
 
+# Question 6: Portfolio Construction
+
+```{r}
+Q6MAA <- read_rds("data/MAA.rds")
+Q6msci <- read_rds("data/msci.rds") %>%
+  filter(Name %in% c("MSCI_ACWI", "MSCI_USA", "MSCI_RE", "MSCI_Jap"))
+```
+
+```{r}
+Q6MAAwide <- Q6MAA %>% select(date, Ticker, Price) %>% spread(Ticker, Price)
+Q6msciwide <- Q6msci %>% spread(Name, Price) 
+
+Q6totalrtn <- Q6MAAwide %>% left_join(Q6msciwide, by = c("date")) %>% rename(
+     "Asian_Currency" = `ADXY Index` ,
+    "US_Currency" = `DXY Index` ,
+    "Global_Bond1" = `LGAGTRUH Index`,
+     "US_Bond1" = `LUAGTRUU Index`,
+    "Euro_Bond1" = `LEATTREU Index`,
+    "Global_Bond2" = `LGCPTRUH Index`,
+    "US_Bond2" = `LUACTRUU Index`,
+    "Euro_Bond2" = `LP05TREH Index`,
+    "Commodity" = `BCOMTR Index`,
+    "Japan_Equity" = `MSCI_Jap`,
+    "US_Property" = `MSCI_RE`,
+    "US_Equity" = `MSCI_USA`,
+    "Global Equity" = `MSCI_ACWI`
+)
+ 
+Q6totalrtn2  <- Q6totalrtn %>%  gather(Tickers, Price, -date) %>%
+    group_by(Tickers) %>%  filter(date > as.Date("2000-01-01")) %>% arrange(date) %>%  
+    group_by(Tickers) %>%  mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret, na.rm = T))) %>% filter(date > dplyr::first(date)) %>% 
+    ungroup() 
+
+Q6totalrtn3 <- Q6totalrtn2 %>% select(date, Tickers, dlogret) %>% 
+    spread(Tickers, dlogret)
+```
+
+
+
+```{r}
+Q6rtn <- Q6totalrtn3 %>% tbl_xts()
+
+library(ROI)
+library(ROI.plugin.quadprog)
+library(ROI.plugin.glpk)
+library(PerformanceAnalytics)
+library(PortfolioAnalytics)
+
+
+port_spec <- portfolio.spec(colnames(Q6rtn))
+port_spec <- add.constraint(portfolio =port_spec, type = "full_investment")
+port_spec <- add.constraint(portfolio = port_spec, type = "long_only")
+port_spec <- add.objective(portfolio = port_spec, type = "risk", name = "StdDev")
+opt <- optimize.portfolio(Q6rtn, portfolio = port_spec, optimize_method = "ROI")
+print(opt)
+extractWeights(opt)
+chart.Weights(opt)
+```
+Above we explored the most simple approach with a simple objective with added constraints.
+```{r}
+print(port_spec)
+```
+As mentioned we explore the constraints and acid here.
+```{r}
+port_spec <- add.constraint(portfolio = port_spec, type = "weight_sum", min_sum = 1, max_sum = 1)
+
+port_spec <- add.constraint(portfolio = port_spec, type = "box", min = 0, max = 0.4)
+
+port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(4, 5, 7, 8, 10, 11)), group_min = 0, group_max = 0.25)
+
+port_spec <- add.constraint(portfolio = port_spec, type = "group", groups = list(c(6, 9, 13)), group_min = 0, group_max = 0.6)
+
+print(port_spec)
+```
+
+```{r}
+port_spec <- add.objective(portfolio = port_spec, type = "return", name = "mean")
+
+# Add a risk objective to minimize portfolio standard deviation
+port_spec <- add.objective(portfolio = port_spec, type = "risk", name = "StdDev")
+
+# Add a risk budget objective
+port_spec <- add.objective(portfolio = port_spec, type = "risk_budget", name = "StdDev", min_prisk = 0.05, max_prisk = 0.1)
+
+print(port_spec)
+```
+
+
+```{r}
+rp <- random_portfolios(portfolio=port_spec, permutations = 50, rp_method ='simplex')
+opt <- optimize.portfolio(R = Q6rtn, portfolio = port_spec, optimize_method = "random", rp = rp, trace = TRUE)
+print(opt)
+chart.Weights(opt)
+```
+
+```{r}
+opt_rebal <- optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, optimize_method = "random", rp = rp, trace = TRUE, search_size = 1000, rebalance_on = "quarters", training_period = 60, rolling_window = 60)
+print(opt_rebal)
+extractObjectiveMeasures(opt)
+head(extractObjectiveMeasures(opt_rebal))
+extractWeights(opt)
+chart.Weights(opt)
+```
+
+```{r}
+chart.Weights(opt_rebal)
+
+chart.RiskBudget(opt_rebal, match.col = "StdDev", risk.type = "percentage")
+```
+
+
+
+
