@@ -2282,90 +2282,6 @@ chart.RollingCorrelation(Ra = xtsQ3ALSIRTN , Rb=rfxts, width = 100, xaxis = TRUE
   legend.loc = NULL, colorset = (1:12), fill = NA)
 ```
 
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
-    ## Warning in cor(x[, 1, drop = FALSE], x[, 2, drop = FALSE]): the standard
-    ## deviation is zero
-
 ![](README_files/figure-markdown_github/unnamed-chunk-19-1.png)
 
 # Question 4: Volatility and GARCH estimates
@@ -2402,15 +2318,7 @@ Q4cnciesplot <- Q4cncieszar %>% ggplot() +  geom_line(aes(date, Price, color = S
 Q4cnciesplot
 ```
 
-    ## Warning: Removed 2 row(s) containing missing values (geom_path).
-
 ![](README_files/figure-markdown_github/unnamed-chunk-21-1.png)
-
-``` r
-# Q4value <- cncy_value %>%  spread(Name, Price)
-#%>%  select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
-   # mutate(Spot = gsub("SouthAfrica", "USD/ZAR", Spot))
-```
 
 ``` r
 library(lubridate)
@@ -2425,14 +2333,14 @@ library(lubridate)
 
 ``` r
 Q4PPP <- PPP %>% select(TIME, LOCATION, Value) %>% spread(LOCATION, Value) %>% 
-    select(TIME, ZAF, USA) %>% gather(Spot, Price, -TIME)# %>%  mutate(YearMonth = format(date, "%Y%B"))
+    select(TIME, ZAF, USA) %>% gather(Spot, Price, -TIME) 
 
 Q4cnciesplot2 <- Q4PPP %>% ggplot() +  geom_line(aes(TIME, Price, color = Spot)) + fmxdat::theme_fmx() + labs(x = "date", 
     y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
 Q4cnciesplot2
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-23-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-22-1.png)
 
 ``` r
 library(tbl2xts)
@@ -2451,7 +2359,7 @@ geom_histogram(aes(x = scaledret, fill = Spot, alpha = 0.5))
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](README_files/figure-markdown_github/unnamed-chunk-24-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-23-1.png)
 
 definite potential for bias due to clumping (auto-persitance in returns)
 so use perfrimanceana, to clean
@@ -2485,7 +2393,7 @@ guides(alpha = "none", colour = "none") +
 fmxdat::theme_fmx()
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-25-1.png) From the
+![](README_files/figure-markdown_github/unnamed-chunk-24-1.png) From the
 above figure it seems that:
 
 There remains strong first order persistence in returns There is clearly
@@ -2500,19 +2408,7 @@ forecast::Acf(Rtn, main = "ACF: Equally Weighted Return")
     ##   method            from
     ##   as.zoo.data.frame zoo
 
-![](README_files/figure-markdown_github/unnamed-chunk-26-1.png)
-
-``` r
-forecast::Acf(Rtn^2, main = "ACF: Squared Equally Weighted Return")
-```
-
-![](README_files/figure-markdown_github/unnamed-chunk-26-2.png)
-
-``` r
-forecast::Acf(abs(Rtn), main = "ACF: Absolute Equally Weighted Return")
-```
-
-![](README_files/figure-markdown_github/unnamed-chunk-26-3.png) The
+![](README_files/figure-markdown_github/unnamed-chunk-25-1.png) The
 above proves what we expected - in particular very strong conditional
 heteroskedasticity, as well as long memory.
 
@@ -2573,36 +2469,22 @@ class(garchfit1)
     ## attr(,"package")
     ## [1] "rugarch"
 
-``` r
-library(xtable)
-slotNames(garchfit1)
-```
+    ## [1] "fit"   "model"
 
-\[1\] “fit” “model”
+    ##  [1] "hessian"         "cvar"            "var"             "sigma"          
+    ##  [5] "condH"           "z"               "LLH"             "log.likelihoods"
+    ##  [9] "residuals"       "coef"            "robust.cvar"     "A"              
+    ## [13] "B"               "scores"          "se.coef"         "tval"           
+    ## [17] "matcoef"         "robust.se.coef"  "robust.tval"     "robust.matcoef" 
+    ## [21] "fitted.values"   "convergence"     "kappa"           "persistence"    
+    ## [25] "timer"           "ipars"           "solver"
 
-``` r
-names(garchfit1@fit)
-```
-
-\[1\] “hessian” “cvar” “var” “sigma”  
-\[5\] “condH” “z” “LLH” “log.likelihoods” \[9\] “residuals” “coef”
-“robust.cvar” “A”  
-\[13\] “B” “scores” “se.coef” “tval”  
-\[17\] “matcoef” “robust.se.coef” “robust.tval” “robust.matcoef” \[21\]
-“fitted.values” “convergence” “kappa” “persistence”  
-\[25\] “timer” “ipars” “solver”
+    ##  [1] "modelinc"   "modeldesc"  "modeldata"  "pars"       "start.pars"
+    ##  [6] "fixed.pars" "maxOrder"   "pos.matrix" "fmodel"     "pidx"      
+    ## [11] "n.start"
 
 ``` r
-names(garchfit1@model)
-```
-
-\[1\] “modelinc” “modeldesc” “modeldata” “pars” “start.pars” \[6\]
-“fixed.pars” “maxOrder” “pos.matrix” “fmodel” “pidx”  
-\[11\] “n.start”
-
-``` r
-# Use it now as follows:
-garchfit1@fit$matcoef  # Model coefficients.
+garchfit1@fit$matcoef 
 ```
 
            Estimate   Std. Error     t value   Pr(>|t|)
@@ -2613,7 +2495,6 @@ mu 1.091702e-04 4.360069e-05 2.5038644 0.01228451 ar1 1.834999e-03
 0.00000000 beta1 9.352686e-01 5.500684e-03 170.0276956 0.00000000
 
 ``` r
-# Include it in your paper as follows:
 pacman::p_load(xtable)
 Table <- xtable(garchfit1@fit$matcoef)
 print(Table, type = "latex", comment = FALSE)
@@ -2640,11 +2521,11 @@ ggplot() +
   geom_line(data = sigma, aes(x = date, y = sigma), color = "red", size = 2, alpha = 0.8) + 
   
   # scale_y_continuous(limits = c(0, 0.35)) + 
-  labs(title = "Comparison: Returns Sigma vs Sigma from Garch", 
+  labs(title = "Comparison: Returns Sigma vs Sigma from uGarch", 
        
-       subtitle = "Note the smoothing effect of garch, as noise is controlled for.", x = "", y = "Comparison of estimated volatility",
+       subtitle = "A clear difference is noticable between earlier estimates and the cleaner uGARCH estimates.",
        
-       caption = "Source: Fin metrics class | Calculations: Own") + 
+       caption = "Note:\nNico Katzke's data used") + 
   
     fmxdat::theme_fmx(CustomCaption = TRUE)
 
@@ -2663,25 +2544,7 @@ plot(ni$zx, ni$zy, ylab = ni$yexpr, xlab = ni$xexpr, type = "l",
 
 ![](README_files/figure-markdown_github/unnamed-chunk-32-1.png)
 
-``` r
-sigma <- sigma(garchfit1)  # Conditional resids
-
-epsilon <- residuals(garchfit1)  # Ordinary resids
-
-zt <- residuals(garchfit1, standardize = TRUE)  # Standardized resids
-
-# Check the class notes on the definitions of epsilon and zt:
-ztbyhand = epsilon/sigma
-
-# And they are exactly the same:
-all.equal(zt, ztbyhand)
-```
-
     ## [1] TRUE
-
-``` r
-infocriteria(garchfit1)
-```
 
     ##                       
     ## Akaike       -7.245377
@@ -2693,25 +2556,25 @@ infocriteria(garchfit1)
 plot(garchfit1, which = 1)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-33-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-34-1.png)
 
 ``` r
 plot(garchfit1, which = 9)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-34-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-35-1.png)
 
 ``` r
 plot(garchfit1, which = 8)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-34-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-36-1.png)
 
 ``` r
 plot(garchfit1, which = 3)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-35-1.png) Note for
+![](README_files/figure-markdown_github/unnamed-chunk-37-1.png) Note for
 the above plot - the blue line is sigma, gray line epsilon (i.e. sigma +
 noise.): notice the massive distorting impact of noise in ordinary
 epsilon, or squared error / S.D. measures: which are typically used for
@@ -2732,7 +2595,7 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
     ## % latex table generated in R 4.0.4 by xtable 1.8-4 package
-    ## % Sun Dec  5 03:50:02 2021
+    ## % Sun Dec  5 06:21:43 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{rrrrr}
@@ -2752,21 +2615,32 @@ garchfit2@fit$matcoef %>% xtable()
 
 # Question 5: MSCI Funds
 
+Diversification across different asset classes is An important tool in
+constructing portfolios do you to its ability to mitigate risk. These
+Asset classes are distributed along a plane most well described by
+growth and inflation And each class Performs in a particular manner
+given the stage of market/bussiness cycle. Equities are on the opposite
+side of the growth spectrum to Long-term Treasuries for example. The
+statement that the return profile across acid classes have converged in
+the past decade is cause for concern as it minimises the ability for
+diversification to be in effective tool in managing risk.
+
+Firstly the data is assessed:
+
+with this in mind we evaluate the MSCI returns and how we can
+investigate whether true returns are converging( are correlations
+between assets classes increasing) or are other systemic factors
+conflating the true signal of volatility in typical market analysis.
+Consistent with the following question, a good proxy needs to be
+established for each type of asset: MSCI_RE is used for property,
+MSCI_ACWI to track global equity, the US ten year treasury is used as a
+bond proxy and the Bloomberg commodity index is used to represent
+commodities. Consistant with standardising returns we ensure TRI series
+are considered.
+
 ``` r
-msci <- read_rds("data/msci.rds")
-bonds <- read_rds("data/bonds_10y.rds")
-comms <- read_rds("data/comms.rds")
-```
+library(lubridate) 
 
-Definition of MSCI series:
-
-These are daily Total Return series for MSCI funds. The names are
-self-explanatory, with MSCI_RE being the global real estate fund,
-MSCI_USREIT being the US real estate fund, and MSCI_ACWI the MSCI All
-Country World Index.
-
-``` r
-library(lubridate)
 Q5MSCI <-msci %>% spread(Name, Price) %>% select(date, MSCI_ACWI, MSCI_RE)
 
 Q5bond <- bonds %>% spread(Name, Bond_10Yr) %>% select(date, US_10Yr)
@@ -2779,6 +2653,10 @@ Q5Diverspotential <- Q5MSCI %>% left_join( Q5bond, by = c("date")) %>%
     filter(date > as.Date("2000-01-01")) %>% arrange(date) %>%  
     group_by(Tickers) %>%  mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret, na.rm = T))) %>% filter(date > dplyr::first(date)) %>%  ungroup()
 ```
+
+Above I compiled a joint Index in wide format in order to accommodate
+the series and then mutate using the statistical measures for returns so
+that I can easily apply PCA procedures.
 
 ``` r
 pacman::p_load("MTS", "robustbase")
@@ -2801,39 +2679,26 @@ MarchTest(Q5xts_rtn)
 DCCPre <- dccPre(Q5xts_rtn, include.mean = T, p = 0)
 ```
 
-    ## Sample mean of the returns:  0.000208785 0.0001418141 -0.0002536672 2.035793e-05
-
-    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
-    ##   Consider formula(paste(x, collapse = " ")) instead.
-
+    ## Sample mean of the returns:  0.000208785 0.0001418141 -0.0002536672 2.035793e-05 
     ## Component:  1 
     ## Estimates:  1e-06 0.113459 0.875184 
     ## se.coef  :  0 0.009054 0.009283 
-    ## t-value  :  6.241081 12.53092 94.27625
-
-    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
-    ##   Consider formula(paste(x, collapse = " ")) instead.
-
+    ## t-value  :  6.241081 12.53092 94.27625 
     ## Component:  2 
     ## Estimates:  1e-06 0.104172 0.882701 
     ## se.coef  :  0 0.009086 0.009786 
-    ## t-value  :  5.841421 11.46542 90.1977
-
-    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
-    ##   Consider formula(paste(x, collapse = " ")) instead.
-
+    ## t-value  :  5.841421 11.46542 90.1977 
     ## Component:  3 
     ## Estimates:  1e-06 0.067626 0.932375 
     ## se.coef  :  0 0.005651 0.00529 
-    ## t-value  :  3.767026 11.96606 176.2464
-
-    ## Warning: Using formula(x) is deprecated when x is a character vector of length > 1.
-    ##   Consider formula(paste(x, collapse = " ")) instead.
-
+    ## t-value  :  3.767026 11.96606 176.2464 
     ## Component:  4 
     ## Estimates:  1e-06 0.042187 0.951532 
     ## se.coef  :  0 0.00422 0.004845 
     ## t-value  :  4.224749 9.997587 196.413
+
+A quick glance of the following table shows that a clear violation of is
+present.
 
 ``` r
 Vol <- DCCPre$marVol
@@ -2853,7 +2718,7 @@ TidyVol <- Vol %>% gather(Stocks, Sigma, -date)
 ggplot(TidyVol) + geom_line(aes(x = date, y = Sigma, colour = Stocks))
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-41-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-43-1.png)
 
 ``` r
 StdRes <- DCCPre$sresi
@@ -2935,11 +2800,7 @@ paste(namesrtn, collapse = "_")
 
 nam <- c()
 xx <- mapply(rep, times = ncolrtn:1, x = namesrtn)
-# Now let's be creative in designing a nested for loop to save the names corresponding to the columns of interest.. 
 
-# TIP: draw what you want to achieve on a paper first. Then apply code.
-
-# See if you can do this on your own first.. Then check vs my solution:
 
 nam <- c()
 for (j in 1:(ncolrtn)) {
@@ -2950,10 +2811,9 @@ for (i in 1:(ncolrtn)) {
 
 colnames(DCC.TV.Cor) <- nam
 
-# So to plot all the time-varying correlations wrt SBK:
- # First append the date column that has (again) been removed...
+
 DCC.TV.Cor <- 
-    data.frame( cbind( date = index(ReturnSeries), DCC.TV.Cor)) %>% # Add date column which dropped away...
+    data.frame( cbind( date = index(ReturnSeries), DCC.TV.Cor)) %>% 
     mutate(date = as.Date(date)) %>%  tbl_df() 
 
 DCC.TV.Cor <- DCC.TV.Cor %>% gather(Pairs, Rho, -date)
@@ -2972,7 +2832,7 @@ Q5compplot <- ggplot(gog.time.var.cor %>% filter(grepl("Bcom_", Pairs),
 print(Q5compplot)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-45-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-47-1.png)
 
 ``` r
 Q5bondplot <- ggplot(gog.time.var.cor %>% filter(grepl("US_10Yr", Pairs), 
@@ -2982,7 +2842,7 @@ Q5bondplot <- ggplot(gog.time.var.cor %>% filter(grepl("US_10Yr", Pairs),
 print(Q5bondplot)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-46-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-48-1.png)
 
 ``` r
 Q5ACWIplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_ACWI", Pairs), 
@@ -2992,7 +2852,7 @@ Q5ACWIplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_ACWI", Pairs),
 print(Q5ACWIplot)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-47-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-49-1.png)
 
 ``` r
 Q5REplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_RE", Pairs), 
@@ -3002,7 +2862,7 @@ Q5REplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_RE", Pairs),
 print(Q5ACWIplot)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-48-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-50-1.png)
 
 ``` r
 library(cowplot)
@@ -3023,7 +2883,7 @@ library(cowplot)
 plot_grid(Q5bondplot, Q5ACWIplot, Q5REplot , Q5compplot, labels = c('', '', '',''))
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-49-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-51-1.png)
 
 ``` r
 library(factoextra)
@@ -3045,7 +2905,7 @@ Q5PCA$rotation
 plot(Q5PCA, type = "l")
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-50-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-52-1.png)
 
 ``` r
 summary(Q5PCA)
@@ -3062,7 +2922,7 @@ pacman::p_load("psych")
 pairs.panels(Q5PCAdata)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-50-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-52-2.png)
 
 ``` r
 gviolion <- Q5PCAdata %>% gather(Type, val) %>% ggplot() + geom_violin(aes(Type, 
@@ -3071,13 +2931,18 @@ gviolion <- Q5PCAdata %>% gather(Type, val) %>% ggplot() + geom_violin(aes(Type,
 fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-50-3.png)
+![](README_files/figure-markdown_github/unnamed-chunk-53-1.png)
 
-Note: This is a very useful figure to include in your reports on the
-behaviour of returns data as it shows similarity in distribution and
-density between the returns.
+Note: This is a very useful figure as it reports on the behaviour of
+returns data as it shows similarity in distribution and density between
+the returns.
 
 # Question 6: Portfolio Construction
+
+In this question we construct a global balanced index fund portfolio
+using a mix of traded global indices that we load below. type of
+optimzer tells us by constraints so wont be max mean eg. before the
+optimsations considerations - look at data and clean.
 
 ``` r
 Q6MAA <- read_rds("data/MAA.rds")
@@ -3113,6 +2978,11 @@ Q6totalrtn2  <- Q6totalrtn %>%  gather(Tickers, Price, -date) %>%
 Q6totalrtn3 <- Q6totalrtn2 %>% select(date, Tickers, dlogret) %>% 
     spread(Tickers, dlogret)
 ```
+
+mvo from 1st priciples gets tricky with additional constrsints and vxvr
+wont let you add the group constsints
+
+welath preserving CPI plus2-3
 
 ``` r
 Q6rtn <- Q6totalrtn3 %>% tbl_xts()
@@ -3196,7 +3066,7 @@ extractWeights(opt)
 chart.Weights(opt)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-53-1.png) Above we
+![](README_files/figure-markdown_github/unnamed-chunk-56-1.png) Above we
 explored the most simple approach with a simple objective with added
 constraints.
 
@@ -3371,7 +3241,7 @@ print(opt)
 chart.Weights(opt)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-57-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-60-1.png)
 
 ``` r
 opt_rebal <- optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, optimize_method = "random", rp = rp, trace = TRUE, search_size = 1000, rebalance_on = "quarters", training_period = 60, rolling_window = 60)
@@ -3597,147 +3467,6 @@ extractObjectiveMeasures(opt)
 head(extractObjectiveMeasures(opt_rebal))
 ```
 
-    ##                 StdDev StdDev.contribution.Asian_Currency
-    ## 2002-03-29 0.002709891                       7.395666e-06
-    ## 2002-06-28 0.001809918                       1.109102e-05
-    ## 2002-09-30 0.002978499                       3.919678e-05
-    ## 2002-12-31 0.002072988                       4.078287e-06
-    ## 2003-03-31 0.002194048                       1.496006e-05
-    ## 2003-06-30 0.002711376                       1.642121e-05
-    ##            StdDev.contribution.Commodity StdDev.contribution.Euro_Bond1
-    ## 2002-03-29                  1.745176e-05                   6.015076e-05
-    ## 2002-06-28                  3.579080e-05                   5.079315e-05
-    ## 2002-09-30                  5.813637e-05                   3.181384e-05
-    ## 2002-12-31                 -4.718263e-06                   1.164897e-04
-    ## 2003-03-31                  3.840602e-05                   1.070996e-04
-    ## 2003-06-30                  6.964116e-05                   2.265327e-04
-    ##            StdDev.contribution.Euro_Bond2 StdDev.contribution.Global Equity
-    ## 2002-03-29                   2.958356e-05                      5.245016e-07
-    ## 2002-06-28                   3.456684e-05                      1.447012e-05
-    ## 2002-09-30                   3.630870e-05                      2.480464e-05
-    ## 2002-12-31                   4.586925e-05                      2.126869e-07
-    ## 2003-03-31                   6.495370e-05                      6.459165e-06
-    ## 2003-06-30                   1.289531e-04                      1.028477e-05
-    ##            StdDev.contribution.Global_Bond1 StdDev.contribution.Global_Bond2
-    ## 2002-03-29                     2.642605e-07                     1.503666e-04
-    ## 2002-06-28                     1.549381e-06                     4.488279e-05
-    ## 2002-09-30                     3.699432e-06                     1.639673e-04
-    ## 2002-12-31                     3.730562e-07                     2.336451e-04
-    ## 2003-03-31                     4.054919e-06                     1.347622e-04
-    ## 2003-06-30                     1.041464e-05                     2.852028e-04
-    ##            StdDev.contribution.Japan_Equity StdDev.contribution.US_Bond1
-    ## 2002-03-29                      0.001936524                 2.199636e-05
-    ## 2002-06-28                      0.001140546                 1.046288e-05
-    ## 2002-09-30                      0.001522970                 5.835844e-05
-    ## 2002-12-31                      0.001182926                 3.462062e-05
-    ## 2003-03-31                      0.001378155                 5.390955e-05
-    ## 2003-06-30                      0.001239373                 1.085136e-04
-    ##            StdDev.contribution.US_Bond2 StdDev.contribution.US_Currency
-    ## 2002-03-29                 2.159839e-04                   -1.859533e-07
-    ## 2002-06-28                 5.401629e-05                   -4.205559e-06
-    ## 2002-09-30                 2.656125e-04                   -9.369966e-06
-    ## 2002-12-31                 3.416027e-04                   -8.722156e-08
-    ## 2003-03-31                 1.855855e-04                   -8.561244e-06
-    ## 2003-06-30                 3.811754e-04                   -1.166440e-05
-    ##            StdDev.contribution.US_Equity StdDev.contribution.US_Property
-    ## 2002-03-29                  2.180590e-04                    5.177607e-05
-    ## 2002-06-28                  3.248891e-04                    9.106515e-05
-    ## 2002-09-30                  6.058446e-04                    1.771556e-04
-    ## 2002-12-31                  8.977588e-05                    2.819939e-05
-    ## 2003-03-31                  7.982290e-05                    1.344406e-04
-    ## 2003-06-30                  1.365184e-04                    1.100092e-04
-    ##            StdDev.pct_contrib_StdDev.Asian_Currency
-    ## 2002-03-29                              0.002729138
-    ## 2002-06-28                              0.006127909
-    ## 2002-09-30                              0.013159913
-    ## 2002-12-31                              0.001967348
-    ## 2003-03-31                              0.006818476
-    ## 2003-06-30                              0.006056414
-    ##            StdDev.pct_contrib_StdDev.Commodity
-    ## 2002-03-29                         0.006440022
-    ## 2002-06-28                         0.019774814
-    ## 2002-09-30                         0.019518684
-    ## 2002-12-31                        -0.002276069
-    ## 2003-03-31                         0.017504642
-    ## 2003-06-30                         0.025684808
-    ##            StdDev.pct_contrib_StdDev.Euro_Bond1
-    ## 2002-03-29                           0.02219675
-    ## 2002-06-28                           0.02806378
-    ## 2002-09-30                           0.01068117
-    ## 2002-12-31                           0.05619413
-    ## 2003-03-31                           0.04881372
-    ## 2003-06-30                           0.08354898
-    ##            StdDev.pct_contrib_StdDev.Euro_Bond2
-    ## 2002-03-29                           0.01091688
-    ## 2002-06-28                           0.01909856
-    ## 2002-09-30                           0.01219027
-    ## 2002-12-31                           0.02212712
-    ## 2003-03-31                           0.02960451
-    ## 2003-06-30                           0.04756003
-    ##            StdDev.pct_contrib_StdDev.Global Equity
-    ## 2002-03-29                            0.0001935508
-    ## 2002-06-28                            0.0079949031
-    ## 2002-09-30                            0.0083279006
-    ## 2002-12-31                            0.0001025992
-    ## 2003-03-31                            0.0029439491
-    ## 2003-06-30                            0.0037931909
-    ##            StdDev.pct_contrib_StdDev.Global_Bond1
-    ## 2002-03-29                           9.751702e-05
-    ## 2002-06-28                           8.560503e-04
-    ## 2002-09-30                           1.242046e-03
-    ## 2002-12-31                           1.799606e-04
-    ## 2003-03-31                           1.848145e-03
-    ## 2003-06-30                           3.841089e-03
-    ##            StdDev.pct_contrib_StdDev.Global_Bond2
-    ## 2002-03-29                             0.05548805
-    ## 2002-06-28                             0.02479824
-    ## 2002-09-30                             0.05505032
-    ## 2002-12-31                             0.11270935
-    ## 2003-03-31                             0.06142171
-    ## 2003-06-30                             0.10518748
-    ##            StdDev.pct_contrib_StdDev.Japan_Equity
-    ## 2002-03-29                              0.7146134
-    ## 2002-06-28                              0.6301645
-    ## 2002-09-30                              0.5113215
-    ## 2002-12-31                              0.5706385
-    ## 2003-03-31                              0.6281335
-    ## 2003-06-30                              0.4571012
-    ##            StdDev.pct_contrib_StdDev.US_Bond1
-    ## 2002-03-29                        0.008117067
-    ## 2002-06-28                        0.005780856
-    ## 2002-09-30                        0.019593240
-    ## 2002-12-31                        0.016700833
-    ## 2003-03-31                        0.024570820
-    ## 2003-06-30                        0.040021604
-    ##            StdDev.pct_contrib_StdDev.US_Bond2
-    ## 2002-03-29                         0.07970206
-    ## 2002-06-28                         0.02984460
-    ## 2002-09-30                         0.08917664
-    ## 2002-12-31                         0.16478761
-    ## 2003-03-31                         0.08458588
-    ## 2003-06-30                         0.14058377
-    ##            StdDev.pct_contrib_StdDev.US_Currency
-    ## 2002-03-29                         -6.862024e-05
-    ## 2002-06-28                         -2.323618e-03
-    ## 2002-09-30                         -3.145869e-03
-    ## 2002-12-31                         -4.207529e-05
-    ## 2003-03-31                         -3.902032e-03
-    ## 2003-06-30                         -4.302023e-03
-    ##            StdDev.pct_contrib_StdDev.US_Equity
-    ## 2002-03-29                          0.08046783
-    ## 2002-06-28                          0.17950484
-    ## 2002-09-30                          0.20340604
-    ## 2002-12-31                          0.04330748
-    ## 2003-03-31                          0.03638157
-    ## 2003-06-30                          0.05035024
-    ##            StdDev.pct_contrib_StdDev.US_Property          mean
-    ## 2002-03-29                            0.01910633 -1.622094e-05
-    ## 2002-06-28                            0.05031451  1.318459e-04
-    ## 2002-09-30                            0.05947815 -1.241916e-04
-    ## 2002-12-31                            0.01360326  5.589697e-04
-    ## 2003-03-31                            0.06127514 -2.776061e-06
-    ## 2003-06-30                            0.04057321  9.162939e-04
-
 ``` r
 extractWeights(opt)
 ```
@@ -3753,16 +3482,16 @@ extractWeights(opt)
 chart.Weights(opt)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-58-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-63-1.png)
 
 ``` r
 chart.Weights(opt_rebal)
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-59-1.png)
+![](README_files/figure-markdown_github/unnamed-chunk-64-1.png)
 
 ``` r
 chart.RiskBudget(opt_rebal, match.col = "StdDev", risk.type = "percentage")
 ```
 
-![](README_files/figure-markdown_github/unnamed-chunk-59-2.png)
+![](README_files/figure-markdown_github/unnamed-chunk-65-1.png)

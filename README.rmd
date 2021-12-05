@@ -172,7 +172,7 @@ Q3ALSIRTN <- T40  %>% arrange(date) %>% select(date, Tickers, Return, J200) %>% 
 colSums(is.na(Q3ALSIRTN))
 ```
 
-```{r}
+```{r, warning=FALSE}
 Q3plot1 <- Q3ALSIRTN %>% ggplot() + geom_line(aes(date, Return, color=Tickers, alpha =0.9)) +
                                                    labs(x = "date", y = "Returns", title = "top40 ALSI Returns", subtitle = "", caption = "Note:\nNico Katzke's data used")
 Q3plot1
@@ -269,7 +269,7 @@ g
 
 ```
 now we add the supplementary variables.
-```{r}
+```{r, warning = FALSE}
 library(PerformanceAnalytics)
 library(tbl2xts)
 rf <-read_rds("data/SA_Bonds.rds") %>% 
@@ -298,7 +298,7 @@ PPP <- read_csv("data/ppp.csv", col_names = T )
 
 vol compared to other currencies or are they all vol.
 
-```{r}
+```{r, warning=FALSE}
 Q4cncieszar <- cncy %>% spread(Name, Price) %>% select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
     mutate(Spot = gsub("SouthAfrica", "USD/ZAR", Spot))
 
@@ -308,16 +308,9 @@ Q4cnciesplot
 ```
 
 ```{r}
-# Q4value <- cncy_value %>%  spread(Name, Price)
-#%>%  select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
-   # mutate(Spot = gsub("SouthAfrica", "USD/ZAR", Spot))
-
-```
-
-```{r}
 library(lubridate)
 Q4PPP <- PPP %>% select(TIME, LOCATION, Value) %>% spread(LOCATION, Value) %>% 
-    select(TIME, ZAF, USA) %>% gather(Spot, Price, -TIME)# %>%  mutate(YearMonth = format(date, "%Y%B"))
+    select(TIME, ZAF, USA) %>% gather(Spot, Price, -TIME) 
 
 Q4cnciesplot2 <- Q4PPP %>% ggplot() +  geom_line(aes(TIME, Price, color = Spot)) + fmxdat::theme_fmx() + labs(x = "date", 
     y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
@@ -372,8 +365,6 @@ There is clear evidence of long memory in the second order process.
 
 ```{r}
 forecast::Acf(Rtn, main = "ACF: Equally Weighted Return")
-forecast::Acf(Rtn^2, main = "ACF: Squared Equally Weighted Return")
-forecast::Acf(abs(Rtn), main = "ACF: Absolute Equally Weighted Return")
 ```
 The above proves what we expected - in particular very strong conditional heteroskedasticity, as well as long memory.
 
@@ -408,17 +399,16 @@ class(garchfit1)
 
 ```
 
-```{r, results='asis'}
+```{r, echo=FALSE}
 
 library(xtable)
 slotNames(garchfit1)
 names(garchfit1@fit)
 names(garchfit1@model)
 
-# Use it now as follows:
-garchfit1@fit$matcoef  # Model coefficients.
-
-# Include it in your paper as follows:
+```
+```{r, results='asis'}
+garchfit1@fit$matcoef 
 pacman::p_load(xtable)
 Table <- xtable(garchfit1@fit$matcoef)
 print(Table, type = "latex", comment = FALSE)
@@ -443,11 +433,11 @@ ggplot() +
   geom_line(data = sigma, aes(x = date, y = sigma), color = "red", size = 2, alpha = 0.8) + 
   
   # scale_y_continuous(limits = c(0, 0.35)) + 
-  labs(title = "Comparison: Returns Sigma vs Sigma from Garch", 
+  labs(title = "Comparison: Returns Sigma vs Sigma from uGarch", 
        
-       subtitle = "Note the smoothing effect of garch, as noise is controlled for.", x = "", y = "Comparison of estimated volatility",
+       subtitle = "A clear difference is noticable between earlier estimates and the cleaner uGARCH estimates.",
        
-       caption = "Source: Fin metrics class | Calculations: Own") + 
+       caption = "Note:\nNico Katzke's data used") + 
   
     fmxdat::theme_fmx(CustomCaption = TRUE)
 
@@ -457,14 +447,14 @@ fmxdat::finplot(gg, y.pct = T, y.pct_acc = 1)
 
 ```
 
-```{r}
+```{r, warning=FALSE}
 ni <- newsimpact(z = NULL, garchfit1)
 
 plot(ni$zx, ni$zy, ylab = ni$yexpr, xlab = ni$xexpr, type = "l", 
     main = "News Impact Curve")
 ```
 
-```{r}
+```{r, echo=FALSE}
 sigma <- sigma(garchfit1)  # Conditional resids
 
 epsilon <- residuals(garchfit1)  # Ordinary resids
@@ -477,11 +467,19 @@ ztbyhand = epsilon/sigma
 # And they are exactly the same:
 all.equal(zt, ztbyhand)
 infocriteria(garchfit1)
+```
+
+```{r}
 plot(garchfit1, which = 1)
+
 ```
 
 ```{r}
 plot(garchfit1, which = 9)
+
+```
+
+```{r}
 plot(garchfit1, which = 8)
 ```
 
@@ -517,19 +515,22 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
 # Question 5: MSCI Funds 
+Diversification across different asset classes is An important tool in constructing portfolios do you to its ability to mitigate risk. These Asset classes are distributed along a plane most well described by growth and inflation And each class Performs in a particular manner given the stage of market/bussiness cycle. Equities are on the opposite side of the growth spectrum to Long-term Treasuries for example. The statement that the return profile across acid classes have converged in the past decade is cause for concern as it minimises the ability for diversification to be in effective tool in managing risk. 
 
-```{r}
+Firstly the data is assessed:
+```{r, echo=FALSE}
+
 msci <- read_rds("data/msci.rds")
 bonds <- read_rds("data/bonds_10y.rds")
 comms <- read_rds("data/comms.rds")
 
 ```
-Definition of MSCI series:
+with this in mind we evaluate the MSCI returns and how we can investigate whether true returns are converging( are correlations between assets classes increasing) or are other systemic factors conflating the true signal of volatility in typical market analysis. 
+Consistent with the following question, a good proxy needs to be established for each type of asset:
+ MSCI_RE is used for property, MSCI_ACWI to track global equity, the US ten year treasury is used as a bond proxy and the Bloomberg commodity index is used to represent commodities. Consistant with standardising returns we ensure TRI series are considered.
+```{r }
+library(lubridate) 
 
-These are daily Total Return series for MSCI funds. The names are self-explanatory, with MSCI_RE being the global real estate fund, MSCI_USREIT being the US real estate fund, and MSCI_ACWI the MSCI All Country World Index.
-
-```{r}
-library(lubridate)
 Q5MSCI <-msci %>% spread(Name, Price) %>% select(date, MSCI_ACWI, MSCI_RE)
 
 Q5bond <- bonds %>% spread(Name, Bond_10Yr) %>% select(date, US_10Yr)
@@ -542,8 +543,8 @@ Q5Diverspotential <- Q5MSCI %>% left_join( Q5bond, by = c("date")) %>%
     filter(date > as.Date("2000-01-01")) %>% arrange(date) %>%  
     group_by(Tickers) %>%  mutate(dlogret = log(Price) - log(lag(Price))) %>% mutate(scaledret = (dlogret -  mean(dlogret, na.rm = T))) %>% filter(date > dplyr::first(date)) %>%  ungroup()
 ```
-
-```{r}
+Above I compiled a joint Index in wide format in order to accommodate the series and then mutate using the statistical measures for returns so that I can easily apply PCA procedures.
+```{r, warning=FALSE}
 pacman::p_load("MTS", "robustbase")
 pacman::p_load("tidyverse", "devtools", "rugarch", "rmgarch", 
     "forecast", "tbl2xts", "lubridate", "PerformanceAnalytics", 
@@ -552,7 +553,7 @@ Q5xts_rtn <- Q5Diverspotential %>% tbl_xts(., cols_to_xts = "dlogret", spread_by
 MarchTest(Q5xts_rtn)
 DCCPre <- dccPre(Q5xts_rtn, include.mean = T, p = 0)
 ```
-
+A quick glance of the following table shows that a clear violation of is present.
 
 ```{r}
 Vol <- DCCPre$marVol
@@ -564,7 +565,7 @@ TidyVol <- Vol %>% gather(Stocks, Sigma, -date)
 ggplot(TidyVol) + geom_line(aes(x = date, y = Sigma, colour = Stocks))
 ```
 
-```{r}
+```{r, warning=FALSE}
 StdRes <- DCCPre$sresi
 
 cl = makePSOCKcluster(10)
@@ -605,7 +606,7 @@ dim(gog.time.var.cor) <- c(nrow(gog.time.var.cor), ncol(gog.time.var.cor)^2)
 # Finally:
 ```
 
-```{r}
+```{r, warning=FALSE}
 renamingdcc <- function(ReturnSeries, DCC.TV.Cor) {
   
 ncolrtn <- ncol(ReturnSeries)
@@ -614,11 +615,7 @@ paste(namesrtn, collapse = "_")
 
 nam <- c()
 xx <- mapply(rep, times = ncolrtn:1, x = namesrtn)
-# Now let's be creative in designing a nested for loop to save the names corresponding to the columns of interest.. 
 
-# TIP: draw what you want to achieve on a paper first. Then apply code.
-
-# See if you can do this on your own first.. Then check vs my solution:
 
 nam <- c()
 for (j in 1:(ncolrtn)) {
@@ -629,10 +626,9 @@ for (i in 1:(ncolrtn)) {
 
 colnames(DCC.TV.Cor) <- nam
 
-# So to plot all the time-varying correlations wrt SBK:
- # First append the date column that has (again) been removed...
+
 DCC.TV.Cor <- 
-    data.frame( cbind( date = index(ReturnSeries), DCC.TV.Cor)) %>% # Add date column which dropped away...
+    data.frame( cbind( date = index(ReturnSeries), DCC.TV.Cor)) %>% 
     mutate(date = as.Date(date)) %>%  tbl_df() 
 
 DCC.TV.Cor <- DCC.TV.Cor %>% gather(Pairs, Rho, -date)
@@ -646,7 +642,7 @@ gog.time.var.cor <- renamingdcc(ReturnSeries = Q5xts_rtn, DCC.TV.Cor = gog.time.
 
 
 
-```{r}
+```{r, warning=FALSE}
 Q5compplot <- ggplot(gog.time.var.cor %>% filter(grepl("Bcom_", Pairs), 
     !grepl("_Bcom", Pairs))) + geom_line(aes(x = date, y = Rho, 
     colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: Bcom")
@@ -654,7 +650,7 @@ Q5compplot <- ggplot(gog.time.var.cor %>% filter(grepl("Bcom_", Pairs),
 print(Q5compplot)
 ```
 
-```{r}
+```{r, warning=FALSE}
 Q5bondplot <- ggplot(gog.time.var.cor %>% filter(grepl("US_10Yr", Pairs), 
     !grepl("_US", Pairs))) + geom_line(aes(x = date, y = Rho, 
     colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: US_10Yr")
@@ -662,7 +658,7 @@ Q5bondplot <- ggplot(gog.time.var.cor %>% filter(grepl("US_10Yr", Pairs),
 print(Q5bondplot)
 ```
 
-```{r}
+```{r, warning=FALSE}
 Q5ACWIplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_ACWI", Pairs), 
     !grepl("_MSCI_ACWI", Pairs))) + geom_line(aes(x = date, y = Rho, 
     colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: ACWI")
@@ -670,7 +666,7 @@ Q5ACWIplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_ACWI", Pairs),
 print(Q5ACWIplot)
 ```
 
-```{r}
+```{r, warning=FALSE}
 Q5REplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_RE", Pairs), 
     !grepl("_MSCI_RE", Pairs))) + geom_line(aes(x = date, y = Rho, 
     colour = Pairs)) + theme_hc() + ggtitle("Go-GARCH: RE")
@@ -678,12 +674,12 @@ Q5REplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_RE", Pairs),
 print(Q5ACWIplot)
 ```
 
-```{r}
+```{r, warning=FALSE}
 library(cowplot)
 plot_grid(Q5bondplot, Q5ACWIplot, Q5REplot , Q5compplot, labels = c('', '', '',''))
 ```
 
-```{r}
+```{r, warning=FALSE}
 library(factoextra)
 library(FactoMineR)
 Q5PCAdata <- Q5Diverspotential %>%  select(date, Tickers, dlogret)%>% spread(Tickers, 
@@ -696,16 +692,21 @@ summary(Q5PCA)
 pacman::p_load("psych")
 pairs.panels(Q5PCAdata)
 
+```
+```{r}
+
 gviolion <- Q5PCAdata %>% gather(Type, val) %>% ggplot() + geom_violin(aes(Type, 
     val, fill = Type), alpha = 0.7) + fmxdat::theme_fmx() + fmxdat::fmx_fills()
 
 fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
 ```
-
-Note: This is a very useful figure to include in your reports on the behaviour of returns data as it shows similarity in distribution and density between the returns.
+ 
+Note: This is a very useful figure as it reports on the behaviour of returns data as it shows similarity in distribution and density between the returns.
 
 # Question 6: Portfolio Construction
-
+In this question we construct a global balanced index fund portfolio using a mix of traded global indices that we load below.
+type of optimzer tells us by constraints so wont be max mean eg.
+before the optimsations considerations - look at data and clean.
 ```{r}
 Q6MAA <- read_rds("data/MAA.rds")
 Q6msci <- read_rds("data/msci.rds") %>%
@@ -740,9 +741,9 @@ Q6totalrtn2  <- Q6totalrtn %>%  gather(Tickers, Price, -date) %>%
 Q6totalrtn3 <- Q6totalrtn2 %>% select(date, Tickers, dlogret) %>% 
     spread(Tickers, dlogret)
 ```
+mvo from 1st priciples gets tricky with additional constrsints and vxvr wont let you add the group constsints 
 
-
-
+welath preserving CPI plus2-3
 ```{r}
 Q6rtn <- Q6totalrtn3 %>% tbl_xts()
 
@@ -803,14 +804,21 @@ chart.Weights(opt)
 opt_rebal <- optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, optimize_method = "random", rp = rp, trace = TRUE, search_size = 1000, rebalance_on = "quarters", training_period = 60, rolling_window = 60)
 print(opt_rebal)
 extractObjectiveMeasures(opt)
+```
+
+```{r, eval=FALSE}
 head(extractObjectiveMeasures(opt_rebal))
+```
+```{r}
 extractWeights(opt)
 chart.Weights(opt)
 ```
 
 ```{r}
 chart.Weights(opt_rebal)
+```
 
+```{r}
 chart.RiskBudget(opt_rebal, match.col = "StdDev", risk.type = "percentage")
 ```
 
