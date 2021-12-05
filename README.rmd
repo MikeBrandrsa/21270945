@@ -80,7 +80,7 @@ print(bondplot1)
 
 ```
 I notice several places where rates stagnate and thus check for missing values in the data.
-```{r, echo=FALSE}
+```{r, echo=FALSE, results='hide'}
 is.na(bond_Adj)
 sum(is.na(bond_Adj))
 ```
@@ -166,7 +166,7 @@ library(tbl2xts)
 Index investing is often seen as a safe a benchmark to sector specific portfolios in conventional financial theory, For this slightly outdated reason as well as the key drivers of indices giving important information about the vulnerability to systemic risk, Understanding the concentration and commonality of returns within an index Provides key insights. Often times indices are used as a low beta benchmarks or are used as controls in econometric regressions. Here I unpack the returns from the J200 return series specifically as follows  
 
 get return series for just j200
-```{r, include=FALSE, eval=FALSE}
+```{r, echo = T, results = 'hide'}
 #pacman::p_load("tidyverse", "devtools", "FactoMineR", "factoextra", 
    # "broom", "rmsfuns")
 #T40 <- read_rds("data/T40.rds")
@@ -306,9 +306,9 @@ chart.RollingCorrelation(Ra = xtsQ3ALSIRTN , Rb=rfxts, width = 62, xaxis = TRUE,
 This rolling correlation is promising from a diversification perspective as it is clearly observable that it revolves around a zero mean consistently meaning that periods of high positive and high negative correlation persistence is unlikely. Taking into account that the highest factor influencing the first principal component was only 12% and drop down to below 5% for the second principal component it is substantiated that there are low levels of commonality of returns within the top 40 index. Before moving on to the following questions it is worth noting that having a portion of a portfolio in bonds during the pandemic would have provided good diversification against that of emerging markets and specifically South African equity as can be observed above.This does of course need to be analysed with in an optimisation routine of course.
 
 # Question 4: Volatility and GARCH estimates
+In this question I conduct a simple univariate-GARCH estimation procedure To identify a pure form of volatility of the rand where after I comment on its relation to other currencies.
 
-
-```{r}
+```{r, echo=FALSE}
 cncy <- read_rds("data/currencies.rds")
 cncy_Carry <- read_rds("data/cncy_Carry.rds")
 cncy_value <- read_rds("data/cncy_value.rds")
@@ -316,8 +316,7 @@ cncyIV <- read_rds("data/cncyIV.rds")
 bbdxy <- read_rds("data/bbdxy.rds")
 PPP <- read_csv("data/ppp.csv", col_names = T ) 
 ```
-
-vol compared to other currencies or are they all vol.
+With the data loaded it is important that before a comparison is made a true volatility for the rand itself needs to be identified in order for us to understand how volatile currency is completed self.I note here that an external package is loaded which is labelled PPP and is the real purchasing power parity of the rand compare to the dollar.
 
 ```{r, warning=FALSE}
 Q4cncieszar <- cncy %>% spread(Name, Price) %>% select(date, SouthAfrica_Cncy) %>% gather(Spot, Price, -date) %>% mutate(Spot = gsub("_Cncy", "", Spot)) %>%
@@ -327,7 +326,7 @@ Q4cnciesplot <- Q4cncieszar %>% ggplot() +  geom_line(aes(date, Price, color = S
     y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
 Q4cnciesplot
 ```
-
+With this iPod is the movement of the USDZAR Currency pair across time.
 ```{r}
 library(lubridate)
 Q4PPP <- PPP %>% select(TIME, LOCATION, Value) %>% spread(LOCATION, Value) %>% 
@@ -337,7 +336,7 @@ Q4cnciesplot2 <- Q4PPP %>% ggplot() +  geom_line(aes(TIME, Price, color = Spot))
     y = "Spot Price", title = "USDZAR Spot Rate.", subtitle = "Changes in the strength of the ZAR overtime.", caption = "Note:\nNico Katzke's data used")
 Q4cnciesplot2
 ```
-
+Immediately here after I present the increase in purchasing power parity in relation to the increasing value of the UUSDZAR spot, Although this is simple often times the initial projection biases further analysis in the direction of a "weakening" rand. I then put the distribution of the rand and show that it is definitely not normally distributed with a large positive skew. 
 ```{r}
 library(tbl2xts)
 
@@ -352,8 +351,7 @@ fmxdat::theme_fmx()
 ggplot(Q4dlogzar) + 
 geom_histogram(aes(x = scaledret, fill = Spot, alpha = 0.5))
 ```
-
-definite potential for bias due to clumping (auto-persitance in returns) so use perfrimanceana, to clean
+This presents a high potential for bias due to clumping which in turn means that there is also persistence in returns. For this reason I clean the data further as follows:
 
 ```{r}
 Rtn <-  Q4dlogzar %>% # Easier to work with ymd here 
@@ -378,24 +376,19 @@ facet_wrap(~ReturnType, nrow = 3, ncol = 1, scales = "free") +
 guides(alpha = "none", colour = "none") + 
 fmxdat::theme_fmx()
 ```
-From the above figure it seems that:
-
-There remains strong first order persistence in returns
-There is clearly periods of strong second order persistence
-There is clear evidence of long memory in the second order process.
-
+From the above figure it is clear that there is persistance in certain periods of USDZAR returns.
+The three main takeaway's here are of first order and second order persistance as well as clear evidence of long-term memory in the second order process.
+I now graph this below:
 ```{r}
 forecast::Acf(Rtn, main = "ACF: Equally Weighted Return")
 ```
-The above proves what we expected - in particular very strong conditional heteroskedasticity, as well as long memory.
-
-A formal test for ARCH effects: LBQ stats on squared returns:
+The above proves what I expected - There is clear evidence of strong conditional heteroscedasticity and long memory can also be observed.
+Therefore I run a formal test for the effects as follows:
 ```{r}
 Box.test(coredata(Rtn^2), type = "Ljung-Box", lag = 12)
 
 ```
-The test rejects the nulls of no ARCH effects - hence we need to control for the remaining conditional heteroskedasticity in the returns series,
-
+As this test reject the null hypothesis that there are no ARCH effects, I control is therefore needed for a walk your return series.
 
 ```{r}
 library(rugarch)
@@ -419,7 +412,7 @@ garchfit1 = ugarchfit(spec = garch11,data = Rtn)
 class(garchfit1)
 
 ```
-
+I then use the above function to estimate the most optimal specification for a univariate GARCH process and display the results below.
 ```{r, echo=FALSE}
 
 library(xtable)
@@ -438,7 +431,7 @@ print(Table, type = "latex", comment = FALSE)
 ```{r}
 persistence(garchfit1)
 ```
-
+The cleaner estimates are then fitted to be original time series and it is clear that a more pure process is observed.
 ```{r}
 sigma <- sigma(garchfit1) %>% xts_tbl() 
 colnames(sigma) <- c("date", "sigma") 
@@ -467,7 +460,7 @@ fmxdat::finplot(gg, y.pct = T, y.pct_acc = 1)
 
 
 ```
-
+A news impact curve is also fitted as follows.
 ```{r, warning=FALSE}
 ni <- newsimpact(z = NULL, garchfit1)
 
@@ -508,11 +501,7 @@ plot(garchfit1, which = 8)
 plot(garchfit1, which = 3)
 
 ```
- Note for the above plot - the blue line is sigma, gray line
- epsilon (i.e. sigma + noise.): notice the massive
- distorting impact of noise in ordinary epsilon, or squared
- error / S.D. measures: which are typically used for
- proxying vol.
+From above a variety of graphs are also plotted, the most notable conclusions of which, are that a high degree of non-normality persists in the data which might bias the results but the estimates are clearly much cleaner than the original estimates.
 
 
 ```{r}
@@ -536,6 +525,7 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
 # Question 5: MSCI Funds 
+
 Diversification across different asset classes is An important tool in constructing portfolios do you to its ability to mitigate risk. These Asset classes are distributed along a plane most well described by growth and inflation And each class Performs in a particular manner given the stage of market/bussiness cycle. Equities are on the opposite side of the growth spectrum to Long-term Treasuries for example. The statement that the return profile across acid classes have converged in the past decade is cause for concern as it minimises the ability for diversification to be in effective tool in managing risk. 
 
 Firstly the data is assessed:
@@ -585,7 +575,7 @@ Vol <-
 TidyVol <- Vol %>% gather(Stocks, Sigma, -date)
 ggplot(TidyVol) + geom_line(aes(x = date, y = Sigma, colour = Stocks))
 ```
-
+I also briefly Graph the initial volatility showing a high degree of variability which I will clean for a purer signal.
 ```{r, warning=FALSE}
 StdRes <- DCCPre$sresi
 
@@ -619,12 +609,11 @@ fit.gogarch <- gogarchfit(spec.go,
 
 print(fit.gogarch)
 ```
-
+Above I plots a go-GARCH fit with the optimal specificationS. 
 ```{r}
 gog.time.var.cor <- rcor(fit.gogarch)
 gog.time.var.cor <- aperm(gog.time.var.cor,c(3,2,1))
 dim(gog.time.var.cor) <- c(nrow(gog.time.var.cor), ncol(gog.time.var.cor)^2)
-# Finally:
 ```
 
 ```{r, warning=FALSE}
@@ -660,7 +649,7 @@ DCC.TV.Cor
 gog.time.var.cor <- renamingdcc(ReturnSeries = Q5xts_rtn, DCC.TV.Cor = gog.time.var.cor)
 
 ```
-
+Here I am carrying out various procedures in order to convert the return series into the correct matrix notation so that the correlation matrix can be dealt with correctly. 
 
 
 ```{r, warning=FALSE}
@@ -670,7 +659,7 @@ Q5compplot <- ggplot(gog.time.var.cor %>% filter(grepl("Bcom_", Pairs),
 
 print(Q5compplot)
 ```
-
+What follows here is for pairwise MV_GARCH Regressions for a cleaner analysis of the correlation of funds within the MSCI Indices. Other than the start of the pandemic which is a clear systemic shock the commodity index correlation with other funds has remained consistent.
 ```{r, warning=FALSE}
 Q5bondplot <- ggplot(gog.time.var.cor %>% filter(grepl("US_10Yr", Pairs), 
     !grepl("_US", Pairs))) + geom_line(aes(x = date, y = Rho, 
@@ -678,7 +667,7 @@ Q5bondplot <- ggplot(gog.time.var.cor %>% filter(grepl("US_10Yr", Pairs),
 
 print(Q5bondplot)
 ```
-
+Again it is not surprising that during the debt crisis the correlation of US bonds rose with other assets in terms of correlation.
 ```{r, warning=FALSE}
 Q5ACWIplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_ACWI", Pairs), 
     !grepl("_MSCI_ACWI", Pairs))) + geom_line(aes(x = date, y = Rho, 
@@ -686,7 +675,7 @@ Q5ACWIplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_ACWI", Pairs),
 
 print(Q5ACWIplot)
 ```
-
+This graph was quite surprising and shows that over time the room for diversification between global equity and real estate has shrunk significantly with coronation becoming significantly higher over time. 
 ```{r, warning=FALSE}
 Q5REplot <- ggplot(gog.time.var.cor %>% filter(grepl("MSCI_RE", Pairs), 
     !grepl("_MSCI_RE", Pairs))) + geom_line(aes(x = date, y = Rho, 
@@ -699,7 +688,8 @@ print(Q5ACWIplot)
 library(cowplot)
 plot_grid(Q5bondplot, Q5ACWIplot, Q5REplot , Q5compplot, labels = c('', '', '',''))
 ```
-
+Above I simplify the above correlation estimates in terms of visual analysis by compiling an into a single plot .
+I then conduct a brief principal component analysis of the now clean Sigma estimates and produce a pairwise panel of the data showing correlations and distributions.
 ```{r, warning=FALSE}
 library(factoextra)
 library(FactoMineR)
@@ -721,8 +711,8 @@ gviolion <- Q5PCAdata %>% gather(Type, val) %>% ggplot() + geom_violin(aes(Type,
 
 fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
 ```
- 
-Note: This is a very useful figure as it reports on the behaviour of returns data as it shows similarity in distribution and density between the returns.
+ This is extremely useful as it reports on the behaviour of these returns and shows how the density of distribution changes with the change in pairs 
+
 
 # Question 6: Portfolio Construction
 In this question we construct a global balanced index fund portfolio using a mix of traded global indices that we load below.

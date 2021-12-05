@@ -59,7 +59,7 @@ Q3plot1 <- Q3ALSIRTN %>% ggplot() + geom_line(aes(date, Return, color=Tickers, a
 Q3plot1
 ```
 Before a principal component analysis is conducted it is worthwhile ensuring that the series has been standardised around zero, As was insured above. Whilst the values were not in the N.a format that can be observed in the graph above that some values were not desirable, For a successful correlation matrix to be run and R I need to fill any values that might cause problems, 
-```{r, echo=FALSE}
+```{r, echo = T, results = 'hide'}
 
 Q3centered <- Q3ALSIRTN %>% group_by(Tickers) %>% mutate(Return = Return - mean(Return)) %>% ungroup() %>% spread(Tickers, Return)
 
