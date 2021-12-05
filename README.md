@@ -2573,7 +2573,7 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
     ## % latex table generated in R 4.0.4 by xtable 1.8-4 package
-    ## % Sun Dec  5 08:54:15 2021
+    ## % Sun Dec  5 09:03:41 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{rrrrr}
@@ -3446,58 +3446,8 @@ opt_rebal <- optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, op
 
 ``` r
 print(opt_rebal)
-```
-
-    ## **************************************************
-    ## PortfolioAnalytics Optimization with Rebalancing
-    ## **************************************************
-    ## 
-    ## Call:
-    ## optimize.portfolio.rebalancing(R = Q6rtn, portfolio = port_spec, 
-    ##     optimize_method = "random", search_size = 1000, trace = TRUE, 
-    ##     rp = rp, rebalance_on = "quarters", training_period = 60, 
-    ##     rolling_window = 60)
-    ## 
-    ## Number of rebalancing dates:  80 
-    ## First rebalance date:
-    ## [1] "2002-03-29"
-    ## Last rebalance date:
-    ## [1] "2021-10-29"
-    ## 
-    ## Annualized Portfolio Rebalancing Return:
-    ## [1] 0.04514679
-    ## 
-    ## Annualized Portfolio Standard Deviation:
-    ## [1] 0.04316011
-
-``` r
 extractObjectiveMeasures(opt)
 ```
-
-    ## $StdDev
-    ## $StdDev$StdDev
-    ## [1] 0.002786754
-    ## 
-    ## $StdDev$contribution
-    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
-    ##   4.321025e-05   8.347874e-05   1.244410e-04   7.462282e-05   2.216557e-05 
-    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
-    ##   4.283603e-06   2.034846e-04   1.212761e-03   5.149621e-05   2.903853e-04 
-    ##    US_Currency      US_Equity    US_Property 
-    ##  -7.098864e-06   4.288442e-04   2.546795e-04 
-    ## 
-    ## $StdDev$pct_contrib_StdDev
-    ## Asian_Currency      Commodity     Euro_Bond1     Euro_Bond2  Global Equity 
-    ##    0.015505584    0.029955547    0.044654464    0.026777683    0.007953901 
-    ##   Global_Bond1   Global_Bond2   Japan_Equity       US_Bond1       US_Bond2 
-    ##    0.001537130    0.073018492    0.435187749    0.018478921    0.104201971 
-    ##    US_Currency      US_Equity    US_Property 
-    ##   -0.002547359    0.153886633    0.091389283 
-    ## 
-    ## 
-    ## $mean
-    ##         mean 
-    ## 0.0001843209
 
 Above we observe that rebalance states are also given within the
 portfolio.
