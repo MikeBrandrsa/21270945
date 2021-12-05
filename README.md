@@ -2732,7 +2732,7 @@ garchfit2@fit$matcoef %>% xtable()
 ```
 
     ## % latex table generated in R 4.0.4 by xtable 1.8-4 package
-    ## % Sun Dec  5 01:03:06 2021
+    ## % Sun Dec  5 01:58:38 2021
     ## \begin{table}[ht]
     ## \centering
     ## \begin{tabular}{rrrrr}
@@ -3024,3 +3024,55 @@ plot_grid(Q5bondplot, Q5ACWIplot, Q5REplot , Q5compplot, labels = c('', '', '','
 ```
 
 ![](README_files/figure-markdown_github/unnamed-chunk-49-1.png)
+
+``` r
+library(factoextra)
+library(FactoMineR)
+Q5PCAdata <- Q5Diverspotential %>%  select(date, Tickers, dlogret)%>% spread(Tickers, 
+    dlogret) %>% select(-date)
+
+Q5PCA <- prcomp(Q5PCAdata, center = TRUE, scale. = TRUE)
+Q5PCA$rotation
+```
+
+    ##                  PC1         PC2        PC3         PC4
+    ## Bcom_Index 0.4011844 -0.42224868  0.8076376 -0.09207931
+    ## MSCI_ACWI  0.6152749 -0.06339778 -0.2540008  0.74357321
+    ## MSCI_RE    0.5704492 -0.20246396 -0.4630326 -0.64745409
+    ## US_10Yr    0.3675263  0.88130308  0.2623086 -0.13936816
+
+``` r
+plot(Q5PCA, type = "l")
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-50-1.png)
+
+``` r
+summary(Q5PCA)
+```
+
+    ## Importance of components:
+    ##                           PC1    PC2    PC3     PC4
+    ## Standard deviation     1.4814 0.9128 0.8724 0.45949
+    ## Proportion of Variance 0.5487 0.2083 0.1903 0.05278
+    ## Cumulative Proportion  0.5487 0.7570 0.9472 1.00000
+
+``` r
+pacman::p_load("psych")
+pairs.panels(Q5PCAdata)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-50-2.png)
+
+``` r
+gviolion <- Q5PCAdata %>% gather(Type, val) %>% ggplot() + geom_violin(aes(Type, 
+    val, fill = Type), alpha = 0.7) + fmxdat::theme_fmx() + fmxdat::fmx_fills()
+
+fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
+```
+
+![](README_files/figure-markdown_github/unnamed-chunk-50-3.png)
+
+Note: This is a very useful figure to include in your reports on the
+behaviour of returns data as it shows similarity in distribution and
+density between the returns.

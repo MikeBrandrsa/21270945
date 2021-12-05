@@ -682,3 +682,25 @@ print(Q5ACWIplot)
 library(cowplot)
 plot_grid(Q5bondplot, Q5ACWIplot, Q5REplot , Q5compplot, labels = c('', '', '',''))
 ```
+
+```{r}
+library(factoextra)
+library(FactoMineR)
+Q5PCAdata <- Q5Diverspotential %>%  select(date, Tickers, dlogret)%>% spread(Tickers, 
+    dlogret) %>% select(-date)
+
+Q5PCA <- prcomp(Q5PCAdata, center = TRUE, scale. = TRUE)
+Q5PCA$rotation
+plot(Q5PCA, type = "l")
+summary(Q5PCA)
+pacman::p_load("psych")
+pairs.panels(Q5PCAdata)
+
+gviolion <- Q5PCAdata %>% gather(Type, val) %>% ggplot() + geom_violin(aes(Type, 
+    val, fill = Type), alpha = 0.7) + fmxdat::theme_fmx() + fmxdat::fmx_fills()
+
+fmxdat::finplot(gviolion, y.pct = T, y.pct_acc = 1, x.vert = T)
+```
+
+Note: This is a very useful figure to include in your reports on the behaviour of returns data as it shows similarity in distribution and density between the returns.
+
