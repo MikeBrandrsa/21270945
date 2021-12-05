@@ -10,7 +10,7 @@ Financial Econometrics Practical
 This Readme will outline all the following questions by means of explaining, interpreting and reasoning through all the necessary code and functions, whereafter a simplified output will be reproduced within each respective question folders.
 
 First, I sanitize my working environment and source all the necessary functions that will be incorporated into our analyses.
-```{r, include=FALSE}
+```{r, include=FALSE, echo=FALSE}
 
 rm(list = ls())
 gc()
@@ -45,8 +45,10 @@ Now I procceed with the respective questions.
 
 # Question 1: Yield Spread.
 
-Since the beginning of 2020 the current Yield spreads in local mid to longer dated bond yields have been the highest in decades. This is conventionally expressed as the difference in these yields of these instruments in percentage points or basis points.
+Since the beginning of 2020 the current Yield spreads in local mid-to-longer dated bond yields have been the highest in decades. This is conventionally expressed as the difference in these yields of these instruments in percentage points or basis points.
 
+To investigate this I will conduct a brief analysis on what is the driving is healed spreads.
+I begin by initialising my data:
 ```{r, include= FALSE}
 library(tidyverse)
 SA_bonds <- read_rds("data/SA_Bonds.rds")
@@ -58,7 +60,7 @@ SA_bonds <- read_rds("data/SA_Bonds.rds")
 #IV <- read_rds("data/IV.rds")
 
 ```
-
+Here I gather the data and plot the three South African bond yields. Here are the yields are plotted against time And it is clear that other than a few notable periods such as crashes of 2001 to 2003, And the financial crisis, There is a consistent pattern where the longer term bonds yields slightly higher but all three follow similar trajectories. What is becoming noticeable now in most return series is in a similar manner to the financial crisis various patterns are observed from the beginning of the Covid pandemic.  
 ```{r, echo=FALSE}
 library(tbl2xts)
 library(PerformanceAnalytics)
@@ -77,14 +79,14 @@ bondplot1 <- bondplot1 + fmxdat::theme_fmx() + theme(legend.position = "bottom")
 print(bondplot1)
 
 ```
-we notice several places where rates stagnate and thus check for missing values in the data.
-```{r, echo=FALSE, include=FALSE}
+I notice several places where rates stagnate and thus check for missing values in the data.
+```{r, echo=FALSE}
 is.na(bond_Adj)
 sum(is.na(bond_Adj))
 ```
-it appears that all the data is present.
+It appears that all the data is present, with this I conduct further analysis of the actual spreads between the various bonds.
 
-Now at first glance an immediate divergence can be observed between the three bond yields, specifically with the three-month and two-year yields diverging from the longer 10 year bond yield. Before investigating this from an economic and quantitative perspective it is worth investigating it more formally.
+At first glance an immediate divergence can be observed between the three bond yields, specifically with the three-month and two-year yields diverging from the longer 10 year bond yield. Before investigating this from an economic and qualitative perspective further, it is worth investigating it more formally.
 ```{r}
 bond_Adj_yield <- SA_bonds %>%
     arrange(date) %>% 
@@ -99,7 +101,7 @@ bondplot2 <- bondplot2 + fmxdat::theme_fmx() + theme(legend.position = "bottom")
 
 print(bondplot2)
 ```
-
+Here the data has been groups in three prepares where the difference is taken between the longer maturity bond from within the pair. As mentioned earlier there are various periods where the yields exhibit Volatile behaviour. Consistent with the two periods mentioned earlier, negative or inverted yields are observed from 2001 to 2004 and again from 2006 to 2009. This will be addressed again later but is worth noting in terms of the behaviour of participants in the market. To get a better understanding of addressing the question at hand I subsets the data to address only the previous decade.
 ```{r}
 bond_Adj_yield_tdy2010 <- bond_Adj_yield %>% gather(bondpair, Spread , -date) %>% arrange(date) %>% 
     filter(date > "2010-01-01")
@@ -107,10 +109,11 @@ bond_Adj_yield_tdy2010 <- bond_Adj_yield %>% gather(bondpair, Spread , -date) %>
 bondplot3 <- bond_Adj_yield_tdy2010 %>% ggplot() + geom_line(aes(x = date, y = Spread, color = bondpair), alpha = 0.8, size = 1.2) 
 
 bondplot3 <- bondplot3 + fmxdat::theme_fmx() + theme(legend.position = "bottom") + labs(x = "date", 
-    y = "Yield Spread", title = "Yield Spread of ZAR Bonds.", subtitle = "Using 3 Month, 2 Year and 10 year bond yields.", caption = "Note:\nNico Katzke's data used")
+    y = "Yield Spread", title = "Yield Spread of ZAR Bonds in the last dacade.", subtitle = "Using 3 Month, 2 Year and 10 year bond yields.", caption = "Note:\nNico Katzke's data used")
 
 print(bondplot3)
 ```
+It is clear from the above Graaf that's-year-old spreads were quite stable up and till the beginning of the pandemic and a significant level increase is observed for all three assets.
 \newpage
 
 # Question 2: Portfolio Construction
@@ -120,7 +123,7 @@ T40 <- read_rds("data/T40.rds")
 RebDays <- read_rds("data/Rebalance_days.rds")
 ``` 
 
-```{r}
+```{r, include=FALSE}
 library(PerformanceAnalytics)
 library(tbl2xts)
 
@@ -132,26 +135,8 @@ library(tbl2xts)
 # porteqw <- rmsfuns::Safe_Return.portfolio(Rtn, weight = Wt, geometric = FALSE)
 ### use this ####
     ####    ####
-```
 
 
-
-
-```{r}
-
-# j400j200effectivereturns <- T40 %>% select(date, Tickers, Return, J400, J200) %>% 
-  #  arrange(date) %>% mutate(effj200rtn = Return*J200) %>% 
-  #  mutate(effj400rtn = Return*J400) %>% select(date,effj200rtn,effj400rtn) 
-
-#Cum_JJRtn <- j400j200effectivereturns %>% arrange(date) %>% 
-  #  mutate(CumJ2Rtn = (cumprod(1 + effj200rtn))) %>% mutate(CumJ4Rtn = (cumprod(1 + effj400rtn)))# Start at 1)
-```
-
-
-# Question 3: Volatility Comparison
-
-get return series for just j200
-```{r}
 #pacman::p_load("tidyverse", "devtools", "FactoMineR", "factoextra", 
    # "broom", "rmsfuns")
 #T40 <- read_rds("data/T40.rds")
@@ -163,7 +148,37 @@ get return series for just j200
 
 ```
 
-```{r}
+
+
+
+```{r, include=FALSE}
+
+# j400j200effectivereturns <- T40 %>% select(date, Tickers, Return, J400, J200) %>% 
+  #  arrange(date) %>% mutate(effj200rtn = Return*J200) %>% 
+  #  mutate(effj400rtn = Return*J400) %>% select(date,effj200rtn,effj400rtn) 
+
+#Cum_JJRtn <- j400j200effectivereturns %>% arrange(date) %>% 
+  #  mutate(CumJ2Rtn = (cumprod(1 + effj200rtn))) %>% mutate(CumJ4Rtn = (cumprod(1 + effj400rtn)))# Start at 1)
+```
+
+
+# Question 3: Volatility Comparison
+Index investing is often seen as a safe a benchmark to sector specific portfolios in conventional financial theory, For this slightly outdated reason as well as the key drivers of indices giving important information about the vulnerability to systemic risk, Understanding the concentration and commonality of returns within an index Provides key insights. Often times indices are used as a low beta benchmarks or are used as controls in econometric regressions. Here I unpack the returns from the J200 return series specifically as follows  
+
+get return series for just j200
+```{r, include=FALSE, eval=FALSE}
+#pacman::p_load("tidyverse", "devtools", "FactoMineR", "factoextra", 
+   # "broom", "rmsfuns")
+#T40 <- read_rds("data/T40.rds")
+#Q2ALSIRTN <- T40  %>% arrange(date) %>% select(date, Tickers, Return, J200) %>% drop_na()
+#colSums(is.na(Q3ALSIRTN))
+#WghtALSIRTN <- Q3ALSIRTN %>% mutate(effectivereturn = Return*J200) %>% 
+ #   group_by(date) %>% summarise(portfolio_return = sum(effectivereturn)) %>% ungroup()
+ # this is for Q2 
+
+```
+
+```{r, echo=FALSE}
 pacman::p_load("tidyverse", "devtools", "FactoMineR", "factoextra", 
     "broom", "rmsfuns")
 T40 <- read_rds("data/T40.rds")
@@ -171,14 +186,16 @@ Q3ALSIRTN <- T40  %>% arrange(date) %>% select(date, Tickers, Return, J200) %>% 
     ifelse(Return < -0.25, -0.25, Return)))
 colSums(is.na(Q3ALSIRTN))
 ```
+In this analysis specifically it is the over-arching relations between constituents, and of movements of the all the in general, that are desirable. For this reason it is acceptable to winsorise the data as observed above to obtain cleaner estimates. 
 
+As a sanity check I also take note that no columns are left out.My process of thinking here was to arrange the data in terms of the J200 series with non-weighted J 400 constituents, whereafter the J400 SWIX constituents were removed. 
 ```{r, warning=FALSE}
 Q3plot1 <- Q3ALSIRTN %>% ggplot() + geom_line(aes(date, Return, color=Tickers, alpha =0.9)) +
-                                                   labs(x = "date", y = "Returns", title = "top40 ALSI Returns", subtitle = "", caption = "Note:\nNico Katzke's data used")
+                                                   labs(x = "date", y = "Returns", title = "top40 ALSI Returns", subtitle = "", caption = "Note:\nNico Katzke's data used") + theme(legend.position = "none")
 Q3plot1
 ```
-
-```{r}
+Before a principal component analysis is conducted it is worthwhile ensuring that the series has been standardised around zero, As was insured above. Whilst the values were not in the N.a format that can be observed in the graph above that some values were not desirable, For a successful correlation matrix to be run and R I need to fill any values that might cause problems, 
+```{r, echo=FALSE}
 
 Q3centered <- Q3ALSIRTN %>% group_by(Tickers) %>% mutate(Return = Return - mean(Return)) %>% ungroup() %>% spread(Tickers, Return)
 
@@ -195,13 +212,15 @@ Q3centered <- bind_cols(
 return(Q3centered)
 any(is.na(Q3centered))
 ```
+The above code is a direct way in which I imputed the returns of individual stocks taken from the distribution of all of the constituents of the return series. As this is a PCA directed approach it made sense to use a collective distribution so that the overall influence of orthogonal shocks could still be accurately analised.
 \newpage
-```{r}
+Below I convert this newlyformed matrix type data frame into a covariance matrix after the date is removed.
+```{r, echo=FALSE}
 Q3centemax <- Q3centered %>% select(-date)
 Q3covmat <- cov(Q3centemax)  
 ```
 
-```{r}
+```{r, echo=FALSE}
 # eigenvectors:
 evec <- eigen(Q3covmat, symmetric = TRUE)$vector
 # eigenvalues:
@@ -210,12 +229,14 @@ eval <- eigen(Q3covmat, symmetric = TRUE)$values
 lambda = diag(t(evec) %*% Q3covmat %*% evec)
 # Which should be equal to eval:
 all.equal(lambda, eval)
-
 prcomp(Q3covmat)
 prop = eval/sum(eval)
-print(prop)
 ```
 
+```{r}
+print(prop)
+```
+Here the proportions of the effects of the principal components are briefly reviewed although I will present them more conveniently below. 
 ```{r}
 prop <- tibble(Loadings = prop) %>% mutate(PC = paste0("PC_", 
     row_number()))
@@ -232,9 +253,9 @@ labs(x = "Principal Components", y = "Loadings", title = "Eigenvalue proportions
     caption = "Source: Fmxdat Package")
 g
 ```
+Before interpreting these values I make mention of the fact that I subsets the principal component to only show the first 10 in the graph. As is typical of the nature of these eigenvalue proportions in this PCA framework, After the fourth principal component, each additional component only explains between 1.5% to 2% of the variation within the top40. In re-visiting the first principal component I note that 12% of the variation within the top 40 is explained by a single component and although we might not know with certainty what this factor is, it has been calculated linearly as observed. Normally in an analysis of the style the next step would be to represent the eigenvector proportions or loading victors graphically, In this case the size of the components makes this a numeric exercise is a poster visual one. For the sake of completeness It is worth mentioning that in this Eigenvector analysis the distribution of the effects of the Different principal components can be observed for the manner in which they load into different variables. 
 
-
-```{r}
+```{r, include=FALSE}
 #pcaseries <- Q3ALSIRTN %>% spread(Tickers, Return) %>% select(-date)
 #demean = scale(pcaseries, center = TRUE, scale = TRUE)
 
@@ -268,7 +289,7 @@ g
 
 
 ```
-now we add the supplementary variables.
+The direction I take from here is that as instead of loading supplementary variables onto the PCA analysis, I instead investigate correlations From a CAPM portfolio-theory perspective. For a slightly different perspective on the concentration of this index. Here the SA 3 Month bond is used as a proxy for the risk free rate. Below I convert it to a timeseries table and apply a CAPM, Three month  rolling correlation. 
 ```{r, warning = FALSE}
 library(PerformanceAnalytics)
 library(tbl2xts)
@@ -278,11 +299,11 @@ rf <-read_rds("data/SA_Bonds.rds") %>%
 rfxts <- tbl_xts(rf)
 
 xtsQ3ALSIRTN <- tbl_xts(Q3ALSIRTN)
-chart.RollingCorrelation(Ra = xtsQ3ALSIRTN , Rb=rfxts, width = 100, xaxis = TRUE,
-  legend.loc = NULL, colorset = (1:12), fill = NA)
+chart.RollingCorrelation(Ra = xtsQ3ALSIRTN , Rb=rfxts, width = 62, xaxis = TRUE,
+  legend.loc = NULL, colorset = (1:12), fill = NA)  
 
 ```
-
+This rolling correlation is promising from a diversification perspective as it is clearly observable that it revolves around a zero mean consistently meaning that periods of high positive and high negative correlation persistence is unlikely. Taking into account that the highest factor influencing the first principal component was only 12% and drop down to below 5% for the second principal component it is substantiated that there are low levels of commonality of returns within the top 40 index. Before moving on to the following questions it is worth noting that having a portion of a portfolio in bonds during the pandemic would have provided good diversification against that of emerging markets and specifically South African equity as can be observed above.This does of course need to be analysed with in an optimisation routine of course.
 
 # Question 4: Volatility and GARCH estimates
 
